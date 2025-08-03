@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './auth/AuthContext';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import ComplianceMaster from './components/ComplianceMaster';
@@ -10,10 +10,10 @@ import GraphView from './components/GraphView';
 import DownloadDetails from './components/DownloadDetails';
 import FutureFeature from './components/FutureFeature';
 import Progress from './components/Progress';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './auth/ProtectedRoute';
 import Layout from './components/Layout';
 import Sidebar from './components/Sidebar';
-// import SignupPage from './components/SignupPage';
+import SignupPage from './components/SignupPage';
 
 function App() {
   return (
@@ -21,7 +21,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          {/* <Route path="/signup" element={<SignupPage />} /> */}
+          <Route path="/signup" element={<SignupPage />} />
           <Route path="/sidebar" element={<Sidebar />} />
           <Route
             path="/dashboard"

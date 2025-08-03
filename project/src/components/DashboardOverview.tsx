@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 import { 
   Shield, 
   Users, 
@@ -118,23 +118,46 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onSectionChange }
   const cards = isAdmin ? adminCards : userCards;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-4 lg:space-y-6">
+      {/* Modern Card Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
             <div
               key={card.id}
               onClick={() => onSectionChange(card.id)}
-              className={`${card.bgColor} ${card.borderColor} border-l-4 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-105`}
+              className="group relative bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-gray-100 shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300 transform hover:-translate-y-1 overflow-hidden"
             >
-              <div className="flex items-start space-x-4">
-                <div className={`${card.color} p-3 rounded-lg`}>
-                  <Icon className="h-6 w-6 text-white" />
+              {/* Background Gradient */}
+              <div className={`absolute top-0 right-0 w-16 h-16 lg:w-20 lg:h-20 ${card.bgColor} rounded-full -translate-y-8 translate-x-8 opacity-50 group-hover:scale-110 transition-transform duration-300`}></div>
+              
+              {/* Content */}
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-3 lg:mb-4">
+                  <div className={`${card.color} p-2 lg:p-3 rounded-lg lg:rounded-xl group-hover:scale-110 transition-transform duration-200`}>
+                    <Icon className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
+                  </div>
+                  
+                  {/* Status Indicator */}
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-2">{card.title}</h3>
-                  <p className="text-sm text-gray-600">{card.description}</p>
+                
+                <div className="space-y-1 lg:space-y-2">
+                  <h3 className="font-semibold text-gray-900 text-sm lg:text-base group-hover:text-gray-700 transition-colors">
+                    {card.title}
+                  </h3>
+                  <p className="text-xs lg:text-sm text-gray-600 leading-relaxed">
+                    {card.description}
+                  </p>
+                </div>
+                
+                {/* Action Indicator */}
+                <div className="mt-3 lg:mt-4 flex items-center text-xs text-gray-500 group-hover:text-gray-700 transition-colors">
+                  <span>Click to access</span>
+                  <svg className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
               </div>
             </div>
@@ -142,15 +165,47 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onSectionChange }
         })}
       </div>
 
-      {/* Expiry Reminders Section */}
-      <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-lg">
-        <div className="flex items-start space-x-3">
-          <AlertTriangle className="h-6 w-6 text-red-500 mt-1" />
-          <div>
-            <h3 className="font-semibold text-red-800 mb-2">Expiry Reminders</h3>
-            <p className="text-red-700">No upcoming expires within 30 days.</p>
+      {/* Enhanced Expiry Reminders Section */}
+      <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl lg:rounded-2xl p-4 lg:p-6 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute top-0 right-0 w-20 h-20 lg:w-24 lg:h-24 bg-red-100 rounded-full -translate-y-10 translate-x-10 opacity-50"></div>
+        
+        <div className="relative z-10 flex items-start space-x-3 lg:space-x-4">
+          <div className="bg-red-100 p-2 lg:p-3 rounded-lg lg:rounded-xl">
+            <AlertTriangle className="h-5 w-5 lg:h-6 lg:w-6 text-red-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-red-800 mb-1 lg:mb-2 text-sm lg:text-base">
+              Expiry Reminders
+            </h3>
+            <p className="text-red-700 text-xs lg:text-sm">
+              No upcoming expires within 30 days.
+            </p>
+            <div className="mt-2 lg:mt-3 flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-xs text-red-600">All compliance items are up to date</span>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Quick Stats Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        {[
+          { label: "Active Projects", value: "24", color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Pending Reviews", value: "8", color: "text-orange-600", bg: "bg-orange-50" },
+          { label: "Completed Tasks", value: "156", color: "text-green-600", bg: "bg-green-50" },
+          { label: "Team Members", value: "12", color: "text-purple-600", bg: "bg-purple-50" }
+        ].map((stat, index) => (
+          <div key={index} className={`${stat.bg} rounded-lg lg:rounded-xl p-3 lg:p-4 text-center`}>
+            <div className={`text-lg lg:text-2xl font-bold ${stat.color} mb-1`}>
+              {stat.value}
+            </div>
+            <div className="text-xs lg:text-sm text-gray-600">
+              {stat.label}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
