@@ -74,7 +74,19 @@ const ComplianceMaster: React.FC = () => {
       setLocations(Array.isArray(locationsData) ? locationsData : []);
     } catch (err) {
       console.error('Error loading data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      let errorMessage = 'Failed to load data';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('Backend service unavailable')) {
+          errorMessage = 'Backend service is currently unavailable. Please try again later.';
+        } else if (err.message.includes('Network error')) {
+          errorMessage = 'Network connection error. Please check your internet connection.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -855,12 +867,24 @@ const ComplianceMaster: React.FC = () => {
           <XCircle className="h-5 w-5 text-red-400 mr-2" />
           <span className="text-red-800">Error: {error}</span>
         </div>
-        <button
-          onClick={loadInitialData}
-          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-        >
-          Try again
-        </button>
+        <div className="mt-4 space-y-2">
+          <button
+            onClick={loadInitialData}
+            className="text-sm text-red-600 hover:text-red-800 underline block"
+          >
+            Try again
+          </button>
+          {error.includes('Backend service unavailable') && (
+            <div className="text-sm text-red-600">
+              <p>Possible solutions:</p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>Check if backend server is running</li>
+                <li>Verify API URL in environment variables</li>
+                <li>Check network connectivity</li>
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
