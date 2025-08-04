@@ -7,14 +7,15 @@ const router = express.Router();
 // GET all locations
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, isActive } = req.query;
+    const { page = 1, limit = 1000, search, isActive } = req.query;
     const query = {};
     
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { city: { $regex: search, $options: 'i' } },
-        { state: { $regex: search, $options: 'i' } }
+        { state: { $regex: search, $options: 'i' } },
+        { address: { $regex: search, $options: 'i' } }
       ];
     }
     
@@ -23,32 +24,45 @@ router.get('/', async (req, res) => {
     }
 
     const locations = await Location.find(query)
-      .populate('initiatives')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
 
-    const total = await Location.countDocuments(query);
-
-    res.json({
-      locations,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total
-    });
+    // Return direct array for compatibility
+    res.json(locations);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching locations', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching locations', 
+      error: error.message 
+    });
   }
 });
 
-// GET single location by ID
+// GET single location by ID with initiatives
 router.get('/:id', async (req, res) => {
   try {
-    const location = await Location.findById(req.params.id).populate('initiatives');
+    const location = await Location.findById(req.params.id);
     if (!location) {
       return res.status(404).json({ message: 'Location not found' });
     }
-    res.json(location);
+
+    // Get initiatives for this location
+    const initiatives = await Initiative.find({ location: req.params.id })
+      .populate('location', 'name city state')
+      .sort({ createdAt: -1 });
+
+    // Get compliance items for this location
+    const Compliance = require('../models/Compliance');
+    const compliance = await Compliance.find({ location: req.params.id })
+      .populate('location', 'name city state')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      location,
+      initiatives,
+      compliance
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching location', error: error.message });
   }
@@ -62,9 +76,17 @@ router.post('/', async (req, res) => {
     res.status(201).json(savedLocation);
   } catch (error) {
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: 'Validation error', error: error.message });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Validation error', 
+        error: error.message 
+      });
     }
-    res.status(500).json({ message: 'Error creating location', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error creating location', 
+      error: error.message 
+    });
   }
 });
 
@@ -111,3 +133,4 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
+

@@ -9,7 +9,7 @@ import WorkLocations from './components/WorkLocations';
 import GraphView from './components/GraphView';
 import DownloadDetails from './components/DownloadDetails';
 import FutureFeature from './components/FutureFeature';
-import Progress from './components/Progress';
+import Progress from './components/Progress.tsx';
 import ProtectedRoute from './auth/ProtectedRoute';
 import Layout from './components/Layout';
 import Sidebar from './components/Sidebar';

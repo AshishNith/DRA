@@ -9,22 +9,18 @@ const locationSchema = new mongoose.Schema({
   },
   address: {
     type: String,
-    required: [true, 'Address is required'],
     trim: true
   },
   city: {
     type: String,
-    required: [true, 'City is required'],
     trim: true
   },
   state: {
     type: String,
-    required: [true, 'State is required'],
     trim: true
   },
   zipCode: {
     type: String,
-    required: [true, 'Zip code is required'],
     trim: true
   },
   coordinates: {
@@ -61,6 +57,10 @@ locationSchema.virtual('initiatives', {
   foreignField: 'location'
 });
 
+// Index for better search performance
+locationSchema.index({ name: 1, city: 1 });
+
+module.exports = mongoose.model('Location', locationSchema);
 // Index for better search performance
 locationSchema.index({ name: 1, city: 1 });
 

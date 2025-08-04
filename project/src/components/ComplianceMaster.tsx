@@ -1,105 +1,233 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Calendar, User, CheckCircle, XCircle, Clock, Search, MapPin, ArrowLeft, Save, X, ChevronRight, ChevronLeft } from 'lucide-react';
-import { mockComplianceItems } from '../data/mockData';
-import { ComplianceItem } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Calendar, User, CheckCircle, XCircle, Clock, Search, MapPin, ArrowLeft, Save, X, ChevronRight, ChevronLeft, Loader } from 'lucide-react';
+import { apiService, Initiative, Location } from '../services/api';
 
 const ComplianceMaster: React.FC = () => {
-  const [complianceItems, setComplianceItems] = useState<ComplianceItem[]>(mockComplianceItems);
+  // State management
+  const [initiatives, setInitiatives] = useState<Initiative[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
+  const [editingItem, setEditingItem] = useState<Initiative | null>(null);
   const [showWorkLocations, setShowWorkLocations] = useState(true);
   const [searchLocation, setSearchLocation] = useState('');
   const [showAddLocationForm, setShowAddLocationForm] = useState(false);
   const [newLocationName, setNewLocationName] = useState('');
   const [showLocationDataForm, setShowLocationDataForm] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Add missing formData state
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     status: 'pending' as 'pending' | 'approved' | 'rejected',
     dueDate: '',
-    assignedTo: '',
+    assignedTo: ''
   });
 
   // Location data form state
   const [locationFormData, setLocationFormData] = useState({
-    // Step 1: Initiative Details
+    title: '',
     description: '',
+    category: 'Environmental',
+    status: 'Planning',
+    startDate: '',
+    endDate: '',
+    budget: 0,
+    participants: 0,
     typeOfPermission: '',
     agency: '',
-    applicable: '',
-    
-    // Step 2: Registration Info
-    registered: '',
-    licenseNumber: '',
-    validity: '',
-    quantity: '',
-    remarks: ''
+    applicable: 'No',
+    registrationInfo: {
+      registered: 'No',
+      licenseNumber: '',
+      validity: '',
+      quantity: '',
+      remarks: ''
+    },
+    contactPerson: {
+      name: '',
+      email: '',
+      phone: ''
+    }
   });
 
-  // Work locations data - now as state so we can add to it
-  const [workLocations, setWorkLocations] = useState([
-    'LEH-Airport', 'DND - PKG 1', 'DND - PKG 2', 'BMC', 'ASSAM ROAD PROJECT',
-    'AGARTALA ROAD PROJECT', 'GUJARAT BULLET TRAIN', 'RLDA-AHMD', 'GLOBAL CITY', 'CMRL-CHENNAI',
-    'KHAMMAM ROAD PROJECT', 'MP JAL NIGAM', 'THANE DEPOT MUMBAI', 'PRAYAGRAJ RLY STN', 'PANIPAT TOLL PROJECT-HR',
-    'PATHANGI TOLL PROJECT-TG', 'NATHAVASLA TOLL PROJECT-AP', 'NTPC PROJECT', 'NHPC PROJECT', 'OFC-H PROJECT'
-  ]);
+  // Load data on component mount
+  useEffect(() => {
+    loadInitialData();
+  }, []);
 
-  const filteredLocations = workLocations.filter(location =>
-    location.toLowerCase().includes(searchLocation.toLowerCase())
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const [initiativesData, locationsData] = await Promise.all([
+        apiService.getInitiatives(),
+        apiService.getLocations()
+      ]);
+      
+      setInitiatives(Array.isArray(initiativesData) ? initiativesData : []);
+      setLocations(Array.isArray(locationsData) ? locationsData : []);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredLocations = locations.filter(location =>
+    location.name.toLowerCase().includes(searchLocation.toLowerCase()) && location.isActive
   );
 
-  const handleAddLocation = () => {
-    if (newLocationName.trim() && !workLocations.includes(newLocationName.trim())) {
-      setWorkLocations([...workLocations, newLocationName.trim()]);
-      setNewLocationName('');
-      setShowAddLocationForm(false);
+  const handleAddLocation = async () => {
+    if (newLocationName.trim() && !locations.some(loc => loc.name === newLocationName.trim())) {
+      try {
+        setSubmitting(true);
+        const newLocation = await apiService.createLocation({
+          name: newLocationName.trim(),
+          isActive: true
+        });
+        setLocations([...locations, newLocation]);
+        setNewLocationName('');
+        setShowAddLocationForm(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to add location');
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
-  const handleDeleteLocation = (locationToDelete: string) => {
-    if (window.confirm(`Are you sure you want to delete "${locationToDelete}" location?`)) {
-      setWorkLocations(workLocations.filter(location => location !== locationToDelete));
+  const handleDeleteLocation = async (locationToDelete: Location) => {
+    if (window.confirm(`Are you sure you want to delete "${locationToDelete.name}" location?`)) {
+      try {
+        setSubmitting(true);
+        await apiService.deleteLocation(locationToDelete._id!);
+        setLocations(locations.filter(location => location._id !== locationToDelete._id));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to delete location');
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingItem) {
-      setComplianceItems(items =>
-        items.map(item =>
-          item.id === editingItem.id
-            ? { ...item, ...formData }
-            : item
-        )
-      );
-    } else {
-      const newItem: ComplianceItem = {
-        id: Date.now().toString(),
-        ...formData,
-        createdAt: new Date().toISOString().split('T')[0],
+  const handleLocationClick = (location: Location) => {
+    setSelectedLocation(location);
+    setShowLocationDataForm(true);
+    setCurrentStep(1);
+    setLocationFormData({
+      title: '',
+      description: '',
+      category: 'Environmental',
+      status: 'Planning',
+      startDate: '',
+      endDate: '',
+      budget: 0,
+      participants: 0,
+      typeOfPermission: '',
+      agency: '',
+      applicable: 'No',
+      registrationInfo: {
+        registered: 'No',
+        licenseNumber: '',
+        validity: '',
+        quantity: '',
+        remarks: ''
+      },
+      contactPerson: {
+        name: '',
+        email: '',
+        phone: ''
+      }
+    });
+  };
+
+  const handleLocationFormSubmit = async () => {
+    if (!selectedLocation) return;
+
+    try {
+      setSubmitting(true);
+      
+      // Ensure all required fields are properly formatted
+      const initiativeData: Omit<Initiative, '_id'> = {
+        title: locationFormData.title.trim(),
+        description: locationFormData.description,
+        location: selectedLocation._id!,
+        category: locationFormData.category || 'Environmental',
+        status: locationFormData.status || 'Planning',
+        startDate: locationFormData.startDate || new Date().toISOString().split('T')[0],
+        endDate: locationFormData.endDate || '',
+        budget: Number(locationFormData.budget) || 0,
+        participants: Number(locationFormData.participants) || 0,
+        typeOfPermission: locationFormData.typeOfPermission || 'Not Applicable',
+        agency: locationFormData.agency || 'Not Applicable',
+        applicable: locationFormData.applicable || 'No',
+        registrationInfo: {
+          registered: locationFormData.registrationInfo.registered || 'No',
+          licenseNumber: locationFormData.registrationInfo.licenseNumber || '',
+          validity: locationFormData.registrationInfo.validity || '',
+          quantity: locationFormData.registrationInfo.quantity || '',
+          remarks: locationFormData.registrationInfo.remarks || ''
+        },
+        contactPerson: {
+          name: locationFormData.contactPerson.name || '',
+          email: locationFormData.contactPerson.email || '',
+          phone: locationFormData.contactPerson.phone || ''
+        },
+        isActive: true
       };
-      setComplianceItems([...complianceItems, newItem]);
+
+      console.log('Sending initiative data:', initiativeData);
+
+      const newInitiative = await apiService.createInitiative(initiativeData);
+      
+      // Create a new initiative object with populated location data
+      const initiativeWithLocation = {
+        ...newInitiative,
+        location: selectedLocation // Set the full location object instead of just ID
+      };
+      
+      setInitiatives([...initiatives, initiativeWithLocation]);
+      setShowLocationDataForm(false);
+      setCurrentStep(1);
+      setSelectedLocation(null);
+    } catch (err) {
+      console.error('Error creating initiative:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save initiative data');
+    } finally {
+      setSubmitting(false);
     }
-    resetForm();
   };
 
-  const handleEdit = (item: ComplianceItem) => {
+  const handleEdit = (item: Initiative) => {
     setEditingItem(item);
     setFormData({
       title: item.title,
       description: item.description,
-      status: item.status,
-      dueDate: item.dueDate,
-      assignedTo: item.assignedTo,
+      status: item.status as any,
+      dueDate: item.endDate || '',
+      assignedTo: item.location,
     });
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this compliance item?')) {
-      setComplianceItems(items => items.filter(item => item.id !== id));
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this initiative?')) {
+      try {
+        setSubmitting(true);
+        await apiService.deleteInitiative(id);
+        setInitiatives(initiatives.filter(item => item._id !== id));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to delete initiative');
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -125,23 +253,6 @@ const ComplianceMaster: React.FC = () => {
     }
   };
 
-  const handleLocationClick = (location: string) => {
-    setSelectedLocation(location);
-    setShowLocationDataForm(true);
-    setCurrentStep(1);
-    setLocationFormData({
-      description: '',
-      typeOfPermission: '',
-      agency: '',
-      applicable: '',
-      registered: '',
-      licenseNumber: '',
-      validity: '',
-      quantity: '',
-      remarks: ''
-    });
-  };
-
   const handleNextStep = () => {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
@@ -152,13 +263,6 @@ const ComplianceMaster: React.FC = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
-  };
-
-  const handleLocationFormSubmit = () => {
-    // Handle form submission here
-    console.log('Location Data:', locationFormData);
-    setShowLocationDataForm(false);
-    setCurrentStep(1);
   };
 
   const getStepStatus = (step: number) => {
@@ -179,7 +283,7 @@ const ComplianceMaster: React.FC = () => {
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Work Locations</span>
           </button>
-          <h2 className="text-2xl font-bold text-gray-900">Add {selectedLocation} Data</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Add {selectedLocation?.name} Data</h2>
         </div>
       </div>
 
@@ -236,7 +340,7 @@ const ComplianceMaster: React.FC = () => {
             <div className="mb-6">
               <div className="bg-gray-100 rounded-lg p-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <div className="text-lg font-semibold text-gray-900">{selectedLocation}</div>
+                <div className="text-lg font-semibold text-gray-900">{selectedLocation?.name}</div>
               </div>
             </div>
 
@@ -244,21 +348,40 @@ const ComplianceMaster: React.FC = () => {
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Step 1: Initiative Title & Description</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Step 1: Initiative Details</h3>
                   
                   <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                      <input
+                        type="text"
+                        value={locationFormData.title}
+                        onChange={(e) => setLocationFormData({...locationFormData, title: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter initiative title"
+                        required
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                       <select
                         value={locationFormData.description}
                         onChange={(e) => setLocationFormData({...locationFormData, description: e.target.value})}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
                       >
                         <option value="">Select Description</option>
                         <option value="Environmental Clearance">Environmental Clearance</option>
                         <option value="Forest Clearance">Forest Clearance</option>
                         <option value="Land Acquisition">Land Acquisition</option>
                         <option value="Safety Permits">Safety Permits</option>
+                        <option value="Education">Education</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Environment">Environment</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Community">Community</option>
+                        <option value="Other">Other</option>
                       </select>
                     </div>
 
@@ -311,7 +434,8 @@ const ComplianceMaster: React.FC = () => {
                 <div className="flex justify-end">
                   <button
                     onClick={handleNextStep}
-                    className="bg-green-500 text-white px-8 py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-2 font-semibold"
+                    disabled={!locationFormData.title || !locationFormData.description}
+                    className="bg-green-500 text-white px-8 py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span>Next</span>
                     <ChevronRight className="w-4 h-4" />
@@ -330,8 +454,14 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Registered (Yes/No)</label>
                       <select
-                        value={locationFormData.registered}
-                        onChange={(e) => setLocationFormData({...locationFormData, registered: e.target.value})}
+                        value={locationFormData.registrationInfo.registered}
+                        onChange={(e) => setLocationFormData({
+                          ...locationFormData,
+                          registrationInfo: {
+                            ...locationFormData.registrationInfo,
+                            registered: e.target.value
+                          }
+                        })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select</option>
@@ -344,8 +474,14 @@ const ComplianceMaster: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">License Number</label>
                       <input
                         type="text"
-                        value={locationFormData.licenseNumber}
-                        onChange={(e) => setLocationFormData({...locationFormData, licenseNumber: e.target.value})}
+                        value={locationFormData.registrationInfo.licenseNumber}
+                        onChange={(e) => setLocationFormData({
+                          ...locationFormData,
+                          registrationInfo: {
+                            ...locationFormData.registrationInfo,
+                            licenseNumber: e.target.value
+                          }
+                        })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter license number"
                       />
@@ -355,8 +491,14 @@ const ComplianceMaster: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Validity</label>
                       <input
                         type="date"
-                        value={locationFormData.validity}
-                        onChange={(e) => setLocationFormData({...locationFormData, validity: e.target.value})}
+                        value={locationFormData.registrationInfo.validity}
+                        onChange={(e) => setLocationFormData({
+                          ...locationFormData,
+                          registrationInfo: {
+                            ...locationFormData.registrationInfo,
+                            validity: e.target.value
+                          }
+                        })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
@@ -365,8 +507,14 @@ const ComplianceMaster: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Quantity / Manpower Nos</label>
                       <input
                         type="text"
-                        value={locationFormData.quantity}
-                        onChange={(e) => setLocationFormData({...locationFormData, quantity: e.target.value})}
+                        value={locationFormData.registrationInfo.quantity}
+                        onChange={(e) => setLocationFormData({
+                          ...locationFormData,
+                          registrationInfo: {
+                            ...locationFormData.registrationInfo,
+                            quantity: e.target.value
+                          }
+                        })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter quantity or manpower numbers"
                       />
@@ -375,8 +523,14 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
                       <textarea
-                        value={locationFormData.remarks}
-                        onChange={(e) => setLocationFormData({...locationFormData, remarks: e.target.value})}
+                        value={locationFormData.registrationInfo.remarks}
+                        onChange={(e) => setLocationFormData({
+                          ...locationFormData,
+                          registrationInfo: {
+                            ...locationFormData.registrationInfo,
+                            remarks: e.target.value
+                          }
+                        })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
                         placeholder="Enter any additional remarks"
                       />
@@ -413,7 +567,7 @@ const ComplianceMaster: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Location:</label>
-                        <p className="text-gray-900">{selectedLocation}</p>
+                        <p className="text-gray-900">{selectedLocation?.name}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Description:</label>
@@ -429,25 +583,25 @@ const ComplianceMaster: React.FC = () => {
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Registered:</label>
-                        <p className="text-gray-900">{locationFormData.registered || 'Not specified'}</p>
+                        <p className="text-gray-900">{locationFormData.registrationInfo.registered || 'Not specified'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">License Number:</label>
-                        <p className="text-gray-900">{locationFormData.licenseNumber || 'Not specified'}</p>
+                        <p className="text-gray-900">{locationFormData.registrationInfo.licenseNumber || 'Not specified'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Validity:</label>
-                        <p className="text-gray-900">{locationFormData.validity || 'Not specified'}</p>
+                        <p className="text-gray-900">{locationFormData.registrationInfo.validity || 'Not specified'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Quantity:</label>
-                        <p className="text-gray-900">{locationFormData.quantity || 'Not specified'}</p>
+                        <p className="text-gray-900">{locationFormData.registrationInfo.quantity || 'Not specified'}</p>
                       </div>
                     </div>
-                    {locationFormData.remarks && (
+                    {locationFormData.registrationInfo.remarks && (
                       <div>
                         <label className="text-sm font-medium text-gray-600">Remarks:</label>
-                        <p className="text-gray-900">{locationFormData.remarks}</p>
+                        <p className="text-gray-900">{locationFormData.registrationInfo.remarks}</p>
                       </div>
                     )}
                   </div>
@@ -463,10 +617,11 @@ const ComplianceMaster: React.FC = () => {
                   </button>
                   <button
                     onClick={handleLocationFormSubmit}
-                    className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 font-semibold"
+                    disabled={submitting}
+                    className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save className="w-4 h-4" />
-                    <span>Submit Data</span>
+                    {submitting ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>{submitting ? 'Saving...' : 'Submit Data'}</span>
                   </button>
                 </div>
               </div>
@@ -553,9 +708,9 @@ const ComplianceMaster: React.FC = () => {
 
         {/* Locations Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          {filteredLocations.map((location, index) => (
+          {filteredLocations.map((location) => (
             <div
-              key={index}
+              key={location._id}
               onClick={() => handleLocationClick(location)}
               className="bg-white border-2 border-teal-300 rounded-xl p-6 hover:shadow-md transition-all duration-200 cursor-pointer hover:border-teal-400 group relative"
             >
@@ -565,6 +720,7 @@ const ComplianceMaster: React.FC = () => {
                   handleDeleteLocation(location);
                 }}
                 className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                disabled={submitting}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -572,7 +728,7 @@ const ComplianceMaster: React.FC = () => {
                 <MapPin className="h-6 w-6 text-teal-600 group-hover:scale-110 transition-transform duration-200" />
               </div>
               <h3 className="text-center font-semibold text-gray-900 text-sm leading-tight pr-6">
-                {location}
+                {location.name}
               </h3>
             </div>
           ))}
@@ -595,7 +751,7 @@ const ComplianceMaster: React.FC = () => {
           </div>
         )}
 
-        {workLocations.length === 0 && (
+        {locations.length === 0 && (
           <div className="text-center py-12">
             <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No locations available</h3>
@@ -608,6 +764,103 @@ const ComplianceMaster: React.FC = () => {
             </button>
           </div>
         )}
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      
+      if (editingItem) {
+        const updateData = {
+          title: formData.title,
+          description: formData.description,
+          status: formData.status === 'pending' ? 'Planning' : 
+                  formData.status === 'approved' ? 'Active' : 'On Hold',
+          endDate: formData.dueDate || '',
+          location: formData.assignedTo
+        };
+        
+        const updatedInitiative = await apiService.updateInitiative(editingItem._id!, updateData);
+        
+        // Find the location object for the updated initiative
+        const locationObj = locations.find(loc => loc._id === formData.assignedTo);
+        const initiativeWithLocation = {
+          ...updatedInitiative,
+          location: locationObj || formData.assignedTo // Use location object if found
+        };
+        
+        setInitiatives(initiatives.map(item => 
+          item._id === editingItem._id ? initiativeWithLocation : item
+        ));
+      } else {
+        const newInitiativeData: Omit<Initiative, '_id'> = {
+          title: formData.title,
+          description: formData.description,
+          location: formData.assignedTo,
+          category: 'Other',
+          status: formData.status === 'pending' ? 'Planning' : 
+                  formData.status === 'approved' ? 'Active' : 'On Hold',
+          startDate: new Date().toISOString().split('T')[0],
+          endDate: formData.dueDate || '',
+          budget: 0,
+          participants: 0,
+          contactPerson: { name: '', email: '', phone: '' },
+          registrationInfo: {
+            registered: 'No',
+            licenseNumber: '',
+            validity: '',
+            quantity: '',
+            remarks: ''
+          },
+          isActive: true
+        };
+        
+        const newInitiative = await apiService.createInitiative(newInitiativeData);
+        
+        // Find the location object for the new initiative
+        const locationObj = locations.find(loc => loc._id === formData.assignedTo);
+        const initiativeWithLocation = {
+          ...newInitiative,
+          location: locationObj || formData.assignedTo // Use location object if found
+        };
+        
+        setInitiatives([...initiatives, initiativeWithLocation]);
+      }
+      
+      resetForm();
+    } catch (err) {
+      console.error('Error saving initiative:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save item');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-gray-600">Loading...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center">
+          <XCircle className="h-5 w-5 text-red-400 mr-2" />
+          <span className="text-red-800">Error: {error}</span>
+        </div>
+        <button
+          onClick={loadInitialData}
+          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -670,12 +923,24 @@ const ComplianceMaster: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description
               </label>
-              <textarea
+              <select
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="input-field h-24 resize-none"
+                className="input-field"
                 required
-              />
+              >
+                <option value="">Select Description</option>
+                <option value="Environmental Clearance">Environmental Clearance</option>
+                <option value="Forest Clearance">Forest Clearance</option>
+                <option value="Land Acquisition">Land Acquisition</option>
+                <option value="Safety Permits">Safety Permits</option>
+                <option value="Education">Education</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Environment">Environment</option>
+                <option value="Technology">Technology</option>
+                <option value="Community">Community</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -703,9 +968,9 @@ const ComplianceMaster: React.FC = () => {
                   required
                 >
                   <option value="">Select Location</option>
-                  {workLocations.map((location, index) => (
-                    <option key={index} value={location}>
-                      {location}
+                  {locations.map((location) => (
+                    <option key={location._id} value={location._id}>
+                      {location.name}
                     </option>
                   ))}
                 </select>
@@ -724,51 +989,114 @@ const ComplianceMaster: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {complianceItems.map((item) => (
-          <div key={item.id} className="card p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                {getStatusIcon(item.status)}
-                <h3 className="font-semibold text-gray-900">{item.title}</h3>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleEdit(item)}
-                  className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+        {initiatives.map((item) => {
+          // Handle both string and object location references
+          const locationName = typeof item.location === 'string' 
+            ? locations.find(loc => loc._id === item.location)?.name || 'Unknown'
+            : item.location?.name || 'Unknown';
             
-            <p className="text-gray-600 mb-4">{item.description}</p>
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(item.status)}`}>
-                  {item.status}
-                </span>
-                <div className="flex items-center text-sm text-gray-500">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  <span>{item.dueDate}</span>
+          return (
+            <div key={item._id} className="card p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  {getStatusIcon(item.status)}
+                  <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleEdit(item)}
+                    className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                    disabled={submitting}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item._id!)}
+                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                    disabled={submitting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center text-sm text-gray-500">
-                <MapPin className="h-4 w-4 mr-1" />
-                <span>Location: {item.assignedTo}</span>
+              
+              <p className="text-gray-600 mb-4">{item.description}</p>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(item.status)}`}>
+                    {item.status}
+                  </span>
+                  {item.endDate && (
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      <span>{new Date(item.endDate).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center text-sm text-gray-500">
+                  <MapPin className="h-4 w-4 mr-1" />
+                  <span>Location: {locationName}</span>
+                </div>
+                
+                {/* Show additional details for initiatives with registration info */}
+                {item.typeOfPermission && item.typeOfPermission !== 'Not Applicable' && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="text-xs text-gray-500 mb-1">Permission Details</div>
+                    <div className="space-y-1 text-sm">
+                      <div>
+                        <span className="text-gray-600">Type: </span>
+                        <span className="font-medium">{item.typeOfPermission}</span>
+                      </div>
+                      {item.agency && item.agency !== 'Not Applicable' && (
+                        <div>
+                          <span className="text-gray-600">Agency: </span>
+                          <span className="font-medium">{item.agency}</span>
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-gray-600">Applicable: </span>
+                        <span className={`font-medium ${item.applicable === 'Yes' ? 'text-green-600' : 'text-gray-600'}`}>
+                          {item.applicable}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Show registration info if registered */}
+                {item.registrationInfo?.registered === 'Yes' && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                    <div className="text-xs text-blue-600 mb-1 font-medium">Registration Status</div>
+                    <div className="space-y-1 text-sm">
+                      {item.registrationInfo.licenseNumber && (
+                        <div>
+                          <span className="text-gray-600">License: </span>
+                          <span className="font-medium">{item.registrationInfo.licenseNumber}</span>
+                        </div>
+                      )}
+                      {item.registrationInfo.validity && (
+                        <div>
+                          <span className="text-gray-600">Valid Until: </span>
+                          <span className="font-medium">{new Date(item.registrationInfo.validity).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                      {item.registrationInfo.quantity && (
+                        <div>
+                          <span className="text-gray-600">Quantity: </span>
+                          <span className="font-medium">{item.registrationInfo.quantity}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {complianceItems.length === 0 && (
+      {initiatives.length === 0 && (
         <div className="text-center py-12">
           <CheckCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No compliance items</h3>
