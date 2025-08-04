@@ -199,13 +199,8 @@ const ComplianceMaster: React.FC = () => {
 
       const newInitiative = await apiService.createInitiative(initiativeData);
       
-      // Create a new initiative object with populated location data
-      const initiativeWithLocation = {
-        ...newInitiative,
-        location: selectedLocation // Set the full location object instead of just ID
-      };
-      
-      setInitiatives([...initiatives, initiativeWithLocation]);
+      // Just add the new initiative as returned from the API (location is already a string ID)
+      setInitiatives([...initiatives, newInitiative]);
       setShowLocationDataForm(false);
       setCurrentStep(1);
       setSelectedLocation(null);
@@ -305,46 +300,47 @@ const ComplianceMaster: React.FC = () => {
           <div className="w-80 bg-gray-50 p-6 border-r border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Progress</h3>
             <div className="space-y-4">
-              {[
-                { step: 1, title: "Initiative Details", description: "Basic information and permissions" },
-                { step: 2, title: "Registration Info", description: "License and registration details" },
-                { step: 3, title: "Review", description: "Review and submit data" }
-              ].map((item) => {
-                const status = getStepStatus(item.step);
-                return (
-                  <div
-                    key={item.step}
-                    className={`p-4 rounded-lg border-l-4 transition-all duration-200 ${
-                      status === 'active' 
-                        ? 'bg-blue-50 border-blue-500' 
-                        : status === 'completed'
-                        ? 'bg-green-50 border-green-500'
-                        : 'bg-gray-100 border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                        status === 'active'
-                          ? 'bg-blue-500 text-white'
-                          : status === 'completed'
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-400 text-white'
-                      }`}>
-                        {status === 'completed' ? <CheckCircle className="w-4 h-4" /> : item.step}
-                      </div>
-                      <div>
-                        <h4 className={`font-medium ${
-                          status === 'active' ? 'text-blue-900' : status === 'completed' ? 'text-green-900' : 'text-gray-600'
-                        }`}>
-                          {item.title}
-                        </h4>
-                        <p className="text-xs text-gray-500">{item.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+  {[
+    { step: 1, title: "Initiative Details", description: "Basic information and permissions" },
+    { step: 2, title: "Registration Info", description: "License and registration details" },
+    { step: 3, title: "Review", description: "Review and submit data" }
+  ].map((item) => {
+    const status = getStepStatus(item.step);
+    return (
+      <div
+        key={item.step}
+        className={`p-4 rounded-lg border-l-4 transition-all duration-200 ${
+          status === 'active' 
+            ? 'bg-blue-50 border-blue-500' 
+            : status === 'completed'
+            ? 'bg-green-50 border-green-500'
+            : 'bg-gray-100 border-gray-300'
+        }`}
+      >
+        <div className="flex items-center space-x-3">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+            status === 'active'
+              ? 'bg-blue-500 text-white'
+              : status === 'completed'
+              ? 'bg-green-500 text-white'
+              : 'bg-gray-400 text-white'
+          }`}>
+            {status === 'completed' ? <CheckCircle className="w-4 h-4" /> : item.step}
+          </div>
+          <div>
+            <h4 className={`font-medium ${
+              status === 'active' ? 'text-blue-900' : status === 'completed' ? 'text-green-900' : 'text-gray-600'
+            }`}>
+              {item.title}
+            </h4>
+            <p className="text-xs text-gray-500">{item.description}</p>
+          </div>
+        </div>
+      </div>
+    );
+  })}
+</div>
+
           </div>
 
           {/* Form Content */}
@@ -358,7 +354,7 @@ const ComplianceMaster: React.FC = () => {
 
             {/* Step 1: Initiative Details */}
             {currentStep === 1 && (
-              <div className="space-y-6">
+              <div className="space-y-6" key="step-1">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Step 1: Initiative Details</h3>
                   
@@ -366,9 +362,10 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
                       <input
+                        key="title-input"
                         type="text"
                         value={locationFormData.title}
-                        onChange={(e) => setLocationFormData({...locationFormData, title: e.target.value})}
+                        onChange={(e) => setLocationFormData(prev => ({...prev, title: e.target.value}))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter initiative title"
                         required
@@ -378,8 +375,9 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                       <select
+                        key="description-select"
                         value={locationFormData.description}
-                        onChange={(e) => setLocationFormData({...locationFormData, description: e.target.value})}
+                        onChange={(e) => setLocationFormData(prev => ({...prev, description: e.target.value}))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
                       >
@@ -400,8 +398,9 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Type of Permission</label>
                       <select
+                        key="permission-select"
                         value={locationFormData.typeOfPermission}
-                        onChange={(e) => setLocationFormData({...locationFormData, typeOfPermission: e.target.value})}
+                        onChange={(e) => setLocationFormData(prev => ({...prev, typeOfPermission: e.target.value}))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select Type</option>
@@ -415,8 +414,9 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Agency</label>
                       <select
+                        key="agency-select"
                         value={locationFormData.agency}
-                        onChange={(e) => setLocationFormData({...locationFormData, agency: e.target.value})}
+                        onChange={(e) => setLocationFormData(prev => ({...prev, agency: e.target.value}))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select Agency</option>
@@ -431,8 +431,9 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Applicable (Yes/No)</label>
                       <select
+                        key="applicable-select"
                         value={locationFormData.applicable}
-                        onChange={(e) => setLocationFormData({...locationFormData, applicable: e.target.value})}
+                        onChange={(e) => setLocationFormData(prev => ({...prev, applicable: e.target.value}))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select</option>
@@ -458,7 +459,7 @@ const ComplianceMaster: React.FC = () => {
 
             {/* Step 2: Registration Info */}
             {currentStep === 2 && (
-              <div className="space-y-6">
+              <div className="space-y-6" key="step-2">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Step 2: Registration Info</h3>
                   
@@ -466,14 +467,15 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Registered (Yes/No)</label>
                       <select
+                        key="registered-select"
                         value={locationFormData.registrationInfo.registered}
-                        onChange={(e) => setLocationFormData({
-                          ...locationFormData,
+                        onChange={(e) => setLocationFormData(prev => ({
+                          ...prev,
                           registrationInfo: {
-                            ...locationFormData.registrationInfo,
+                            ...prev.registrationInfo,
                             registered: e.target.value
                           }
-                        })}
+                        }))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select</option>
@@ -485,15 +487,16 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">License Number</label>
                       <input
+                        key="license-input"
                         type="text"
                         value={locationFormData.registrationInfo.licenseNumber}
-                        onChange={(e) => setLocationFormData({
-                          ...locationFormData,
+                        onChange={(e) => setLocationFormData(prev => ({
+                          ...prev,
                           registrationInfo: {
-                            ...locationFormData.registrationInfo,
+                            ...prev.registrationInfo,
                             licenseNumber: e.target.value
                           }
-                        })}
+                        }))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter license number"
                       />
@@ -502,15 +505,16 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Validity</label>
                       <input
+                        key="validity-input"
                         type="date"
                         value={locationFormData.registrationInfo.validity}
-                        onChange={(e) => setLocationFormData({
-                          ...locationFormData,
+                        onChange={(e) => setLocationFormData(prev => ({
+                          ...prev,
                           registrationInfo: {
-                            ...locationFormData.registrationInfo,
+                            ...prev.registrationInfo,
                             validity: e.target.value
                           }
-                        })}
+                        }))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
@@ -518,15 +522,16 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Quantity / Manpower Nos</label>
                       <input
+                        key="quantity-input"
                         type="text"
                         value={locationFormData.registrationInfo.quantity}
-                        onChange={(e) => setLocationFormData({
-                          ...locationFormData,
+                        onChange={(e) => setLocationFormData(prev => ({
+                          ...prev,
                           registrationInfo: {
-                            ...locationFormData.registrationInfo,
+                            ...prev.registrationInfo,
                             quantity: e.target.value
                           }
-                        })}
+                        }))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter quantity or manpower numbers"
                       />
@@ -535,14 +540,15 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
                       <textarea
+                        key="remarks-textarea"
                         value={locationFormData.registrationInfo.remarks}
-                        onChange={(e) => setLocationFormData({
-                          ...locationFormData,
+                        onChange={(e) => setLocationFormData(prev => ({
+                          ...prev,
                           registrationInfo: {
-                            ...locationFormData.registrationInfo,
+                            ...prev.registrationInfo,
                             remarks: e.target.value
                           }
-                        })}
+                        }))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
                         placeholder="Enter any additional remarks"
                       />
@@ -571,7 +577,7 @@ const ComplianceMaster: React.FC = () => {
 
             {/* Step 3: Review */}
             {currentStep === 3 && (
-              <div className="space-y-6">
+              <div className="space-y-6" key="step-3">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Step 3: Review & Submit</h3>
                   
@@ -797,15 +803,9 @@ const ComplianceMaster: React.FC = () => {
         
         const updatedInitiative = await apiService.updateInitiative(editingItem._id!, updateData);
         
-        // Find the location object for the updated initiative
-        const locationObj = locations.find(loc => loc._id === formData.assignedTo);
-        const initiativeWithLocation = {
-          ...updatedInitiative,
-          location: locationObj || formData.assignedTo // Use location object if found
-        };
-        
+        // Just use the updated initiative as returned from the API
         setInitiatives(initiatives.map(item => 
-          item._id === editingItem._id ? initiativeWithLocation : item
+          item._id === editingItem._id ? updatedInitiative : item
         ));
       } else {
         const newInitiativeData: Omit<Initiative, '_id'> = {
@@ -832,14 +832,8 @@ const ComplianceMaster: React.FC = () => {
         
         const newInitiative = await apiService.createInitiative(newInitiativeData);
         
-        // Find the location object for the new initiative
-        const locationObj = locations.find(loc => loc._id === formData.assignedTo);
-        const initiativeWithLocation = {
-          ...newInitiative,
-          location: locationObj || formData.assignedTo // Use location object if found
-        };
-        
-        setInitiatives([...initiatives, initiativeWithLocation]);
+        // Just use the new initiative as returned from the API
+        setInitiatives([...initiatives, newInitiative]);
       }
       
       resetForm();
@@ -923,9 +917,11 @@ const ComplianceMaster: React.FC = () => {
                   Title
                 </label>
                 <input
+                  key="form-title-input"
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))
+                  }
                   className="input-field"
                   required
                 />
@@ -935,9 +931,11 @@ const ComplianceMaster: React.FC = () => {
                   Due Date
                 </label>
                 <input
+                  key="form-date-input"
                   type="date"
                   value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))
+                  }
                   className="input-field"
                   required
                 />
@@ -948,8 +946,10 @@ const ComplianceMaster: React.FC = () => {
                 Description
               </label>
               <select
+                key="form-description-select"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))
+                }
                 className="input-field"
                 required
               >
@@ -972,8 +972,10 @@ const ComplianceMaster: React.FC = () => {
                   Status
                 </label>
                 <select
+                  key="form-status-select"
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))
+                  }
                   className="input-field"
                 >
                   <option value="pending">Pending</option>
@@ -986,8 +988,10 @@ const ComplianceMaster: React.FC = () => {
                   Work Location
                 </label>
                 <select
+                  key="form-location-select"
                   value={formData.assignedTo}
-                  onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, assignedTo: e.target.value }))
+                  }
                   className="input-field"
                   required
                 >
@@ -1017,7 +1021,7 @@ const ComplianceMaster: React.FC = () => {
           // Handle both string and object location references
           const locationName = typeof item.location === 'string' 
             ? locations.find(loc => loc._id === item.location)?.name || 'Unknown'
-            : item.location?.name || 'Unknown';
+            : (item.location as any)?.name || 'Unknown';
             
           return (
             <div key={item._id} className="card p-6">

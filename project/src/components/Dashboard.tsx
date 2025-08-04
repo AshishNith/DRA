@@ -1,14 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Users, Shield, Building2, TrendingUp, Calendar, Bell, Search } from 'lucide-react';
+import { BarChart3, Users, Shield, Building2, TrendingUp, Calendar, Bell, Search, RefreshCw, Loader } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { apiService } from '../services/api';
 import Layout from './Layout';
 import DashboardOverview from './DashboardOverview';
+
+interface DashboardStats {
+  overview: {
+    totalUsers: number;
+    totalInitiatives: number;
+    totalLocations: number;
+    totalCompliance: number;
+    activeInitiatives: number;
+    completedInitiatives: number;
+    planningInitiatives: number;
+    pendingCompliance: number;
+    overdueCompliance: number;
+    totalBudget: number;
+    monthlyGrowth: number;
+  };
+  completionRates: {
+    initiatives: number;
+    compliance: number;
+  };
+  recentActivities: any[];
+  locationStats: any[];
+}
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Update time every minute
@@ -19,48 +45,128 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getDashboardStats();
+      
+      if (response.success && response.data) {
+        setDashboardStats(response.data);
+      } else {
+        setError(response.error || 'Failed to fetch dashboard data');
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSectionChange = (section: string) => {
     navigate(`/${section}`);
   };
 
-  const quickStats = [
-    {
-      title: "Total Projects",
-      value: "24",
-      change: "+12%",
-      icon: Building2,
-      color: "bg-blue-500",
-      lightColor: "bg-blue-50",
-      textColor: "text-blue-600"
-    },
-    {
-      title: "Active Users",
-      value: "156",
-      change: "+8%",
-      icon: Users,
-      color: "bg-green-500",
-      lightColor: "bg-green-50",
-      textColor: "text-green-600"
-    },
-    {
-      title: "Compliance Score",
-      value: "94%",
-      change: "+2%",
-      icon: Shield,
-      color: "bg-purple-500",
-      lightColor: "bg-purple-50",
-      textColor: "text-purple-600"
-    },
-    {
-      title: "Monthly Growth",
-      value: "18.2%",
-      change: "+5%",
-      icon: TrendingUp,
-      color: "bg-orange-500",
-      lightColor: "bg-orange-50",
-      textColor: "text-orange-600"
+  const formatCurrency = (amount: number) => {
+    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+    if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
+    return `₹${amount}`;
+  };
+
+  const getQuickStats = () => {
+    if (!dashboardStats) {
+      return [
+        { title: "Total Projects", value: "0", change: "0%", icon: Building2, color: "bg-blue-500", lightColor: "bg-blue-50", textColor: "text-blue-600" },
+        { title: "Active Users", value: "0", change: "0%", icon: Users, color: "bg-green-500", lightColor: "bg-green-50", textColor: "text-green-600" },
+        { title: "Compliance Score", value: "0%", change: "0%", icon: Shield, color: "bg-purple-500", lightColor: "bg-purple-50", textColor: "text-purple-600" },
+        { title: "Monthly Growth", value: "0%", change: "0%", icon: TrendingUp, color: "bg-orange-500", lightColor: "bg-orange-50", textColor: "text-orange-600" }
+      ];
     }
-  ];
+
+    const { overview, completionRates } = dashboardStats;
+    
+    return [
+      {
+        title: "Total Projects",
+        value: overview.totalInitiatives.toString(),
+        change: `+${Math.round(((overview.activeInitiatives / overview.totalInitiatives) * 100) || 0)}%`,
+        icon: Building2,
+        color: "bg-blue-500",
+        lightColor: "bg-blue-50",
+        textColor: "text-blue-600"
+      },
+      {
+        title: "Active Users",
+        value: overview.totalUsers.toString(),
+        change: "+8%", // This would be calculated if we had historical data
+        icon: Users,
+        color: "bg-green-500",
+        lightColor: "bg-green-50",
+        textColor: "text-green-600"
+      },
+      {
+        title: "Compliance Score",
+        value: `${completionRates.compliance}%`,
+        change: `+${completionRates.initiatives - completionRates.compliance}%`,
+        icon: Shield,
+        color: "bg-purple-500",
+        lightColor: "bg-purple-50",
+        textColor: "text-purple-600"
+      },
+      {
+        title: "Monthly Growth",
+        value: `${overview.monthlyGrowth}%`,
+        change: "+5%", // This would be calculated from historical data
+        icon: TrendingUp,
+        color: "bg-orange-500",
+        lightColor: "bg-orange-50",
+        textColor: "text-orange-600"
+      }
+    ];
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+        <Layout title="Dashboard Overview">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <Loader className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+              <p className="text-gray-600">Loading dashboard data...</p>
+            </div>
+          </div>
+        </Layout>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+        <Layout title="Dashboard Overview">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-red-800 mb-2">Error Loading Dashboard</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={fetchDashboardData}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Retry</span>
+            </button>
+          </div>
+        </Layout>
+      </div>
+    );
+  }
+
+  const quickStats = getQuickStats();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -99,13 +205,27 @@ const Dashboard: React.FC = () => {
                       minute: '2-digit' 
                     })}</span>
                   </div>
+                  {dashboardStats && (
+                    <div className="flex items-center space-x-2 text-sm text-blue-600">
+                      <span>Total Budget: {formatCurrency(dashboardStats.overview.totalBudget)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               
               <div className="flex items-center space-x-3 lg:space-x-4">
+                <button 
+                  onClick={fetchDashboardData}
+                  className="relative p-2 lg:p-3 bg-gray-100 hover:bg-gray-200 rounded-lg lg:rounded-xl transition-colors duration-200"
+                  title="Refresh data"
+                >
+                  <RefreshCw className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
+                </button>
                 <button className="relative p-2 lg:p-3 bg-gray-100 hover:bg-gray-200 rounded-lg lg:rounded-xl transition-colors duration-200">
                   <Bell className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
-                  <span className="absolute -top-1 -right-1 w-2 h-2 lg:w-3 lg:h-3 bg-red-500 rounded-full"></span>
+                  {dashboardStats && dashboardStats.overview.overdueCompliance > 0 && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 lg:w-3 lg:h-3 bg-red-500 rounded-full"></span>
+                  )}
                 </button>
                 <div className="relative hidden sm:block">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -127,7 +247,9 @@ const Dashboard: React.FC = () => {
                   <div className={`p-2 lg:p-3 rounded-lg lg:rounded-xl ${stat.lightColor} group-hover:scale-110 transition-transform duration-200`}>
                     <stat.icon className={`w-4 h-4 lg:w-6 lg:h-6 ${stat.textColor}`} />
                   </div>
-                  <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                    stat.change.startsWith('+') ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'
+                  }`}>
                     {stat.change}
                   </span>
                 </div>
@@ -136,6 +258,67 @@ const Dashboard: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Enhanced Summary Cards */}
+          {dashboardStats && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Initiative Status</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Active</span>
+                    <span className="font-semibold text-green-600">{dashboardStats.overview.activeInitiatives}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Completed</span>
+                    <span className="font-semibold text-blue-600">{dashboardStats.overview.completedInitiatives}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Planning</span>
+                    <span className="font-semibold text-yellow-600">{dashboardStats.overview.planningInitiatives}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Compliance Overview</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Total Items</span>
+                    <span className="font-semibold">{dashboardStats.overview.totalCompliance}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Pending</span>
+                    <span className="font-semibold text-yellow-600">{dashboardStats.overview.pendingCompliance}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Overdue</span>
+                    <span className="font-semibold text-red-600">{dashboardStats.overview.overdueCompliance}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Locations Summary</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Total Locations</span>
+                    <span className="font-semibold">{dashboardStats.overview.totalLocations}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">With Initiatives</span>
+                    <span className="font-semibold text-green-600">
+                      {dashboardStats.locationStats.filter(l => l.initiativeCount > 0).length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Total Budget</span>
+                    <span className="font-semibold text-purple-600">{formatCurrency(dashboardStats.overview.totalBudget)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Quick Actions */}
           <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-6">

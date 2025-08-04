@@ -98,15 +98,28 @@ router.put('/:id', async (req, res) => {
       req.body,
       { new: true, runValidators: true }
     );
+
     if (!location) {
-      return res.status(404).json({ message: 'Location not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Location not found' 
+      });
     }
+    
     res.json(location);
   } catch (error) {
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: 'Validation error', error: error.message });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Validation error', 
+        error: error.message 
+      });
     }
-    res.status(500).json({ message: 'Error updating location', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error updating location', 
+      error: error.message 
+    });
   }
 });
 

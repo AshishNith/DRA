@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL
+const API_BASE_URL = 'http://localhost:5000/api';
 
 export interface Initiative {
   _id?: string;
@@ -62,37 +62,13 @@ class ApiService {
       });
 
       if (!response.ok) {
-        // Check if response is HTML (error page) instead of JSON
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('text/html')) {
-          throw new Error(`Server error: ${response.status} - Backend service unavailable`);
-        }
-
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (parseError) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Invalid response format - expected JSON');
       }
 
       return await response.json();
     } catch (error) {
       console.error(`API request failed: ${endpoint}`, error);
-      
-      // Handle network errors
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Network error - please check your internet connection or backend service');
-      }
-      
       throw error;
     }
   }
@@ -115,6 +91,14 @@ class ApiService {
   async createLocation(location: Omit<Location, '_id'>): Promise<Location> {
     const response = await this.request<any>('/locations', {
       method: 'POST',
+      body: JSON.stringify(location),
+    });
+    return response?.data || response;
+  }
+
+  async updateLocation(id: string, location: Partial<Location>): Promise<Location> {
+    const response = await this.request<any>(`/locations/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(location),
     });
     return response?.data || response;
@@ -245,23 +229,33 @@ class ApiService {
       const totalInitiatives = initiatives.length;
       const activeInitiatives = initiatives.filter((i: any) => i.status === 'Active').length;
       const completedInitiatives = initiatives.filter((i: any) => i.status === 'Completed').length;
+      const planningInitiatives = initiatives.filter((i: any) => i.status === 'Planning').length;
 
       const initiativeCompletionRate = totalInitiatives > 0 
         ? Math.round((completedInitiatives / totalInitiatives) * 100) 
         : 0;
 
+      // Calculate total budget
+      const totalBudget = initiatives.reduce((sum: number, i: any) => sum + (i.budget || 0), 0);
+      
+      // Calculate growth (mock for now)
+      const monthlyGrowth = totalInitiatives > 0 ? Math.round((activeInitiatives / totalInitiatives) * 100) : 0;
+
       return {
         success: true,
         data: {
           overview: {
-            totalUsers: 25,
+            totalUsers: 25, // This would come from a users API if available
             totalInitiatives,
             totalLocations,
-            totalCompliance: 15,
+            totalCompliance: 15, // This would come from compliance API
             activeInitiatives,
             completedInitiatives,
+            planningInitiatives,
             pendingCompliance: 5,
             overdueCompliance: 2,
+            totalBudget,
+            monthlyGrowth
           },
           completionRates: {
             initiatives: initiativeCompletionRate,
