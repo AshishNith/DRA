@@ -68,7 +68,7 @@ const GraphView: React.FC = () => {
   const totalInitiatives = initiatives.length;
   const activeInitiatives = initiatives.filter(initiative => initiative.status === 'Active').length;
   const completedInitiatives = initiatives.filter(initiative => initiative.status === 'Completed').length;
-  const planningInitiatives = initiatives.filter(initiative => initiative.status === 'Planning').length;
+  // const planningInitiatives = initiatives.filter(initiative => initiative.status === 'Planning').length;
 
   // User role distribution
   const userRoleStats = users.reduce((acc, user) => {
@@ -381,7 +381,7 @@ const GraphView: React.FC = () => {
       <div className="card p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Initiative Categories</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Object.entries(initiativeCategoryStats).map(([category, count], index) => (
+          {Object.entries(initiativeCategoryStats).map(([category, count]) => (
             <div key={category} className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-gray-900">{count}</div>
               <div className="text-sm text-gray-600 capitalize">{category}</div>

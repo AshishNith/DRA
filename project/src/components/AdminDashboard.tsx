@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Edit, Trash2, Shield, User, X, Calendar, Mail, Phone, MapPin } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Shield, User, X, Calendar } from 'lucide-react';
 import { apiService } from '../services/api';
 import { User as UserType } from '../services/api';
 

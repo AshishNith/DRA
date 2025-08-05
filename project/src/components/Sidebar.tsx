@@ -5,7 +5,6 @@ import { doSignOut } from '../auth/auth';
 import { 
   User, 
   Users, 
-  Eye, 
   BarChart3, 
   MapPin, 
   TrendingUp, 

@@ -1,14 +1,158 @@
-import React from 'react';
-import { Download, FileText, Users, MapPin, Calendar } from 'lucide-react';
-import { mockWorkLocations, mockUsers, mockInitiatives } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { Download, Users, MapPin, Calendar, Filter, Search, RefreshCw, Building2, AlertCircle } from 'lucide-react';
+import { apiService } from '../services/api';
+import { User, Location, Initiative } from '../services/api';
 
 const DownloadDetails: React.FC = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [initiatives, setInitiatives] = useState<Initiative[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [error, setError] = useState('');
+
+  // Filter states
+  const [userFilters, setUserFilters] = useState({
+    role: '',
+    isActive: '',
+    search: ''
+  });
+  const [locationFilters, setLocationFilters] = useState({
+    isActive: '',
+    search: ''
+  });
+  const [initiativeFilters, setInitiativeFilters] = useState({
+    status: '',
+    category: '',
+    location: '',
+    search: ''
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [usersData, locationsData, initiativesData] = await Promise.all([
+        apiService.getUsers({ limit: 1000 }),
+        apiService.getLocations({ limit: 1000 }),
+        apiService.getInitiatives({ limit: 1000 })
+      ]);
+      
+      setUsers(usersData);
+      setLocations(locationsData);
+      setInitiatives(initiativesData);
+      setError('');
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch data');
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const downloadCSV = (data: any[], filename: string, headers: string[]) => {
+    if (data.length === 0) {
+      alert('No data available to download');
+      return;
+    }
+
     const csvContent = [
       headers.join(','),
       ...data.map(row => headers.map(header => {
-        const value = row[header.toLowerCase().replace(' ', '')];
-        return typeof value === 'string' ? `"${value}"` : value;
+        const key = header.toLowerCase().replace(/\s+/g, '');
+        let value = '';
+        
+        // Handle nested objects and different data structures
+        switch (key) {
+          case 'name':
+            value = row.name || row.title || '';
+            break;
+          case 'email':
+            value = row.email || '';
+            break;
+          case 'role':
+            value = row.role || '';
+            break;
+          case 'status':
+            value = row.status || (row.isActive ? 'Active' : 'Inactive');
+            break;
+          case 'createdat':
+            value = row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '';
+            break;
+          case 'lastlogin':
+            value = row.lastLogin ? new Date(row.lastLogin).toLocaleDateString() : '';
+            break;
+          case 'address':
+            value = row.address || '';
+            break;
+          case 'city':
+            value = row.city || '';
+            break;
+          case 'state':
+            value = row.state || '';
+            break;
+          case 'zipcode':
+            value = row.zipCode || '';
+            break;
+          case 'description':
+            value = row.description || '';
+            break;
+          case 'title':
+            value = row.title || '';
+            break;
+          case 'category':
+            value = row.category || '';
+            break;
+          case 'budget':
+            value = row.budget || 0;
+            break;
+          case 'participants':
+            value = row.participants || 0;
+            break;
+          case 'startdate':
+            value = row.startDate ? new Date(row.startDate).toLocaleDateString() : '';
+            break;
+          case 'enddate':
+            value = row.endDate ? new Date(row.endDate).toLocaleDateString() : '';
+            break;
+          case 'location':
+            value = typeof row.location === 'object' ? row.location?.name || '' : row.location || '';
+            break;
+          case 'contactperson':
+            value = row.contactPerson?.name || '';
+            break;
+          case 'contactemail':
+            value = row.contactPerson?.email || '';
+            break;
+          case 'contactphone':
+            value = row.contactPerson?.phone || '';
+            break;
+          case 'agency':
+            value = row.agency || '';
+            break;
+          case 'typeofpermission':
+            value = row.typeOfPermission || '';
+            break;
+          case 'applicable':
+            value = row.applicable || '';
+            break;
+          case 'compliancestatus':
+            value = row.complianceStatus || '';
+            break;
+          case 'licensenumber':
+            value = row.registrationInfo?.licenseNumber || '';
+            break;
+          case 'validity':
+            value = row.registrationInfo?.validity || '';
+            break;
+          default:
+            value = row[key] || '';
+        }
+        
+        return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
       }).join(','))
     ].join('\n');
 
@@ -16,93 +160,362 @@ const DownloadDetails: React.FC = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `${filename}.csv`);
+    link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
-  const downloadWorkLocations = () => {
-    const headers = ['Name', 'Address', 'City', 'Country', 'EmployeeCount', 'CreatedAt'];
-    downloadCSV(mockWorkLocations, 'work-locations', headers);
+  const getFilteredUsers = () => {
+    return users.filter(user => {
+      if (userFilters.role && user.role !== userFilters.role) return false;
+      if (userFilters.isActive !== '' && user.isActive !== (userFilters.isActive === 'true')) return false;
+      if (userFilters.search && !user.name.toLowerCase().includes(userFilters.search.toLowerCase()) && 
+          !user.email.toLowerCase().includes(userFilters.search.toLowerCase())) return false;
+      return true;
+    });
   };
 
-  const downloadUsers = () => {
-    const headers = ['Name', 'Email', 'Role', 'CreatedAt'];
-    downloadCSV(mockUsers, 'users', headers);
+  const getFilteredLocations = () => {
+    return locations.filter(location => {
+      if (locationFilters.isActive !== '' && location.isActive !== (locationFilters.isActive === 'true')) return false;
+      if (locationFilters.search && !location.name.toLowerCase().includes(locationFilters.search.toLowerCase()) &&
+          !location.description?.toLowerCase().includes(locationFilters.search.toLowerCase())) return false;
+      return true;
+    });
   };
 
-  const downloadInitiatives = () => {
-    const headers = ['Title', 'Description', 'Status', 'Priority', 'CreatedBy', 'CreatedAt', 'UpdatedAt'];
-    downloadCSV(mockInitiatives, 'initiatives', headers);
+  const getFilteredInitiatives = () => {
+    return initiatives.filter(initiative => {
+      if (initiativeFilters.status && initiative.status !== initiativeFilters.status) return false;
+      if (initiativeFilters.category && initiative.category !== initiativeFilters.category) return false;
+      if (initiativeFilters.location) {
+        const locationMatch = typeof initiative.location === 'object' && initiative.location !== null
+          ? (initiative.location as any).name === initiativeFilters.location
+          : initiative.location === initiativeFilters.location;
+        if (!locationMatch) return false;
+      }
+      if (initiativeFilters.search && 
+          !initiative.title.toLowerCase().includes(initiativeFilters.search.toLowerCase()) &&
+          !initiative.description?.toLowerCase().includes(initiativeFilters.search.toLowerCase())) return false;
+      return true;
+    });
   };
+
+  const downloadUsers = async () => {
+    setDownloading('users');
+    try {
+      const filteredUsers = getFilteredUsers();
+      const headers = ['Name', 'Email', 'Role', 'Status', 'Last Login', 'Created At'];
+      downloadCSV(filteredUsers, 'users', headers);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const downloadLocations = async () => {
+    setDownloading('locations');
+    try {
+      const filteredLocations = getFilteredLocations();
+      const headers = ['Name', 'Description', 'Address', 'City', 'State', 'Zip Code', 'Status', 'Created At'];
+      downloadCSV(filteredLocations, 'locations', headers);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const downloadInitiatives = async () => {
+    setDownloading('initiatives');
+    try {
+      const filteredInitiatives = getFilteredInitiatives();
+      const headers = [
+        'Title', 'Description', 'Category', 'Status', 'Location', 'Budget', 'Participants',
+        'Start Date', 'End Date', 'Contact Person', 'Contact Email', 'Contact Phone',
+        'Agency', 'Type of Permission', 'Applicable', 'Compliance Status', 'License Number', 'Validity', 'Created At'
+      ];
+      downloadCSV(filteredInitiatives, 'initiatives', headers);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  // Get unique values for filter options
+  const uniqueRoles = [...new Set(users.map(user => user.role))];
+  const uniqueStatuses = [...new Set(initiatives.map(init => init.status))];
+  const uniqueCategories = [...new Set(initiatives.map(init => init.category))];
+  const uniqueLocationNames = [...new Set(locations.map(loc => loc.name))];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 mb-4">{error}</p>
+          <button onClick={fetchData} className="btn-primary">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const downloadOptions = [
     {
-      title: 'Work Locations',
-      description: 'Export all work location details including addresses and employee counts',
-      icon: MapPin,
-      count: mockWorkLocations.length,
-      action: downloadWorkLocations,
-      color: 'bg-orange-500',
-      bgColor: 'bg-orange-50',
-    },
-    {
       title: 'Users',
-      description: 'Export all system users with their roles and registration dates',
+      description: 'Export user details with roles and activity status',
       icon: Users,
-      count: mockUsers.length,
+      count: getFilteredUsers().length,
+      totalCount: users.length,
       action: downloadUsers,
       color: 'bg-blue-500',
       bgColor: 'bg-blue-50',
+      downloadKey: 'users'
+    },
+    {
+      title: 'Locations',
+      description: 'Export location details including addresses and status',
+      icon: MapPin,
+      count: getFilteredLocations().length,
+      totalCount: locations.length,
+      action: downloadLocations,
+      color: 'bg-orange-500',
+      bgColor: 'bg-orange-50',
+      downloadKey: 'locations'
     },
     {
       title: 'Initiatives',
-      description: 'Export all initiatives with status and priority information',
-      icon: FileText,
-      count: mockInitiatives.length,
+      description: 'Export initiatives with complete details and compliance info',
+      icon: Building2,
+      count: getFilteredInitiatives().length,
+      totalCount: initiatives.length,
       action: downloadInitiatives,
       color: 'bg-green-500',
       bgColor: 'bg-green-50',
-    },
+      downloadKey: 'initiatives'
+    }
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-2 mb-6">
-        <Download className="h-6 w-6 text-blue-600" />
-        <h2 className="text-2xl font-bold text-gray-900">Download Details</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-2">
+          <Download className="h-6 w-6 text-blue-600" />
+          <h2 className="text-2xl font-bold text-gray-900">Download Details</h2>
+        </div>
+        <button
+          onClick={fetchData}
+          className="btn-secondary flex items-center space-x-2"
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <span>Refresh Data</span>
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {downloadOptions.map((option, index) => {
-          const Icon = option.icon;
-          return (
-            <div key={index} className={`${option.bgColor} border border-gray-200 rounded-lg p-6`}>
-              <div className="flex items-start space-x-4 mb-4">
-                <div className={`${option.color} p-3 rounded-lg`}>
-                  <Icon className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-2">{option.title}</h3>
-                  <p className="text-sm text-gray-600 mb-3">{option.description}</p>
-                  <div className="flex items-center text-sm text-gray-500 mb-4">
-                    <FileText className="h-4 w-4 mr-1" />
-                    <span>{option.count} records available</span>
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={option.action}
-                className="w-full btn-primary flex items-center justify-center space-x-2"
-              >
-                <Download className="h-4 w-4" />
-                <span>Download CSV</span>
-              </button>
+      {/* Users Section */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Users className="h-5 w-5 mr-2 text-blue-600" />
+            Users ({getFilteredUsers().length}/{users.length})
+          </h3>
+        </div>
+        
+        {/* User Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select
+              value={userFilters.role}
+              onChange={(e) => setUserFilters({...userFilters, role: e.target.value})}
+              className="input-field"
+            >
+              <option value="">All Roles</option>
+              {uniqueRoles.map(role => (
+                <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              value={userFilters.isActive}
+              onChange={(e) => setUserFilters({...userFilters, isActive: e.target.value})}
+              className="input-field"
+            >
+              <option value="">All Status</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                value={userFilters.search}
+                onChange={(e) => setUserFilters({...userFilters, search: e.target.value})}
+                placeholder="Search users..."
+                className="input-field pl-10"
+              />
             </div>
-          );
-        })}
+          </div>
+        </div>
+
+        <button
+          onClick={downloadUsers}
+          disabled={downloading === 'users'}
+          className="btn-primary flex items-center space-x-2"
+        >
+          {downloading === 'users' ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          <span>Download Users CSV ({getFilteredUsers().length} records)</span>
+        </button>
+      </div>
+
+      {/* Locations Section */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <MapPin className="h-5 w-5 mr-2 text-orange-600" />
+            Locations ({getFilteredLocations().length}/{locations.length})
+          </h3>
+        </div>
+        
+        {/* Location Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              value={locationFilters.isActive}
+              onChange={(e) => setLocationFilters({...locationFilters, isActive: e.target.value})}
+              className="input-field"
+            >
+              <option value="">All Status</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                value={locationFilters.search}
+                onChange={(e) => setLocationFilters({...locationFilters, search: e.target.value})}
+                placeholder="Search locations..."
+                className="input-field pl-10"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={downloadLocations}
+          disabled={downloading === 'locations'}
+          className="btn-primary flex items-center space-x-2"
+        >
+          {downloading === 'locations' ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          <span>Download Locations CSV ({getFilteredLocations().length} records)</span>
+        </button>
+      </div>
+
+      {/* Initiatives Section */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Building2 className="h-5 w-5 mr-2 text-green-600" />
+            Initiatives ({getFilteredInitiatives().length}/{initiatives.length})
+          </h3>
+        </div>
+        
+        {/* Initiative Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              value={initiativeFilters.status}
+              onChange={(e) => setInitiativeFilters({...initiativeFilters, status: e.target.value})}
+              className="input-field"
+            >
+              <option value="">All Status</option>
+              {uniqueStatuses.map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              value={initiativeFilters.category}
+              onChange={(e) => setInitiativeFilters({...initiativeFilters, category: e.target.value})}
+              className="input-field"
+            >
+              <option value="">All Categories</option>
+              {uniqueCategories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <select
+              value={initiativeFilters.location}
+              onChange={(e) => setInitiativeFilters({...initiativeFilters, location: e.target.value})}
+              className="input-field"
+            >
+              <option value="">All Locations</option>
+              {uniqueLocationNames.map(location => (
+                <option key={location} value={location}>{location}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                value={initiativeFilters.search}
+                onChange={(e) => setInitiativeFilters({...initiativeFilters, search: e.target.value})}
+                placeholder="Search initiatives..."
+                className="input-field pl-10"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={downloadInitiatives}
+          disabled={downloading === 'initiatives'}
+          className="btn-primary flex items-center space-x-2"
+        >
+          {downloading === 'initiatives' ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          <span>Download Initiatives CSV ({getFilteredInitiatives().length} records)</span>
+        </button>
       </div>
 
       {/* Download Instructions */}
@@ -113,19 +526,25 @@ const DownloadDetails: React.FC = () => {
             <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
               <span className="text-xs font-medium text-blue-600">1</span>
             </div>
-            <p>Click on any download button above to export data in CSV format</p>
+            <p>Apply filters to refine your data selection before downloading</p>
           </div>
           <div className="flex items-start space-x-2">
             <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
               <span className="text-xs font-medium text-blue-600">2</span>
             </div>
-            <p>The file will be automatically downloaded to your default download folder</p>
+            <p>Click download button to export filtered data in CSV format</p>
           </div>
           <div className="flex items-start space-x-2">
             <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
               <span className="text-xs font-medium text-blue-600">3</span>
             </div>
-            <p>Open the CSV file in Excel, Google Sheets, or any spreadsheet application</p>
+            <p>Files include current date in filename and can be opened in Excel or Google Sheets</p>
+          </div>
+          <div className="flex items-start space-x-2">
+            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-xs font-medium text-blue-600">4</span>
+            </div>
+            <p>Use the refresh button to get the latest data before downloading</p>
           </div>
         </div>
       </div>
@@ -134,22 +553,26 @@ const DownloadDetails: React.FC = () => {
       <div className="card p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Export Summary</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-900">{mockWorkLocations.length}</div>
-            <div className="text-sm text-gray-600">Work Locations</div>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-900">{mockUsers.length}</div>
-            <div className="text-sm text-gray-600">System Users</div>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-900">{mockInitiatives.length}</div>
-            <div className="text-sm text-gray-600">Initiatives</div>
-          </div>
+          {downloadOptions.map((option, index) => (
+            <div key={index} className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl font-bold text-gray-900">{option.count}</div>
+              <div className="text-sm text-gray-600">{option.title} (Filtered)</div>
+              <div className="text-xs text-gray-500">Total: {option.totalCount}</div>
+            </div>
+          ))}
         </div>
-        <div className="mt-4 flex items-center text-sm text-gray-500">
-          <Calendar className="h-4 w-4 mr-1" />
-          <span>Last updated: {new Date().toLocaleDateString()}</span>
+        <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center">
+            <Calendar className="h-4 w-4 mr-1" />
+            <span>Last updated: {new Date().toLocaleString()}</span>
+          </div>
+          <div className="flex items-center">
+            <Filter className="h-4 w-4 mr-1" />
+            <span>Filters applied: 
+              {Object.values({...userFilters, ...locationFilters, ...initiativeFilters})
+                .filter(v => v !== '').length} active
+            </span>
+          </div>
         </div>
       </div>
     </div>
