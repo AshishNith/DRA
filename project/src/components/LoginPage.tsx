@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { doSignInWithEmailAndPass, doSignInWithGoogle } from '../auth/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff, Sparkles, Building2, Shield } from 'lucide-react';
+import { apiService } from '../services/api';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -32,7 +33,17 @@ const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await doSignInWithEmailAndPass(email, password);
+      const userCredential = await doSignInWithEmailAndPass(email, password);
+      const user = userCredential.user;
+      
+      // Store user data in database
+      await apiService.loginUser({
+        uid: user.uid,
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        imageURL: user.photoURL || ''
+      });
+
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true');
       }
@@ -47,7 +58,17 @@ const LoginPage: React.FC = () => {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-      await doSignInWithGoogle();
+      const userCredential = await doSignInWithGoogle();
+      const user = userCredential.user;
+      
+      // Store user data in database
+      await apiService.loginUser({
+        uid: user.uid,
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        imageURL: user.photoURL || ''
+      });
+
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Google login failed');

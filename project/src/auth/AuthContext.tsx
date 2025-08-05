@@ -35,7 +35,7 @@ import React, {
         // Check if user is admin based on email or custom claims
         if (user?.email) {
           // You can customize this logic based on your admin identification method
-          const adminEmails = ['admin@company.com', 'admin@draipl.com','23bme025@nith.ac.in','ranjan.ashish9992@gmail.com'];
+          const adminEmails = ['admin@company.com', 'admin@draipl.com','23bme025@nith.ac.in','23bcs072@nith.ac.in','ranjan.ashish9992@gmail.com'];
           setIsAdmin(adminEmails.includes(user.email));
         } else {
           setIsAdmin(false);

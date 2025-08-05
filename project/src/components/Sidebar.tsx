@@ -26,7 +26,7 @@ const Sidebar: React.FC = () => {
   const adminMenuItems = [
     { id: 'compliance', label: 'Compliance Master', icon: Shield, path: '/compliance' },
     { id: 'manage-users', label: 'Manage Users', icon: Users, path: '/manage-users' },
-    { id: 'show-users', label: 'Show All Users', icon: Eye, path: '/show-users' },
+    // { id: 'show-users', label: 'Show All Users', icon: Eye, path: '/show-users' },
     { id: 'progress', label: 'Progress Overview', icon: TrendingUp, path: '/progress' },
     { id: 'locations', label: 'Add Work Location', icon: MapPin, path: '/locations' },
     { id: 'graph', label: 'Graph', icon: BarChart3, path: '/graph' },

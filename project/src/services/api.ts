@@ -44,6 +44,19 @@ export interface Location {
   isActive: boolean;
 }
 
+export interface User {
+  _id?: string;
+  uid: string;
+  name: string;
+  email: string;
+  imageURL?: string;
+  isActive: boolean;
+  lastLogin: string;
+  role: 'admin' | 'user' | 'manager';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -214,6 +227,51 @@ class ApiService {
 
   async getComplianceStats() {
     return this.request('/compliance/stats/overview');
+  }
+
+  // User APIs
+  async loginUser(userData: { uid: string; name: string; email: string; imageURL?: string }): Promise<User> {
+    const response = await this.request<any>('/users/login', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    return response?.data || response;
+  }
+
+  async getUsers(params?: { page?: number; limit?: number; search?: string; isActive?: boolean }): Promise<User[]> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    const response = await this.request<any>(`/users?${queryParams.toString()}`);
+    return Array.isArray(response) ? response : (response?.data?.users || response?.users || []);
+  }
+
+  async getUserByUid(uid: string): Promise<User> {
+    const response = await this.request<any>(`/users/${uid}`);
+    return response?.data || response;
+  }
+
+  async updateUser(uid: string, userData: Partial<User>): Promise<User> {
+    const response = await this.request<any>(`/users/${uid}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+    return response?.data || response;
+  }
+
+  async deleteUser(uid: string): Promise<void> {
+    return this.request<void>(`/users/${uid}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getUserStats() {
+    return this.request('/users/stats/overview');
   }
 
   // Dashboard stats endpoint

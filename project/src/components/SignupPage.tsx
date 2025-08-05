@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import "../styles/Signup.css";
 import { useAuth } from '../auth/AuthContext';
 import { doCreateUserWithEmailAndPass, doSignInWithGoogle } from '../auth/auth';
+import { apiService } from '../services/api';
 import {
   AlertCircle,
   CheckCircle,
@@ -67,7 +68,17 @@ const SignupPage: React.FC = () => {
     }
 
     try {
-      await doCreateUserWithEmailAndPass(formData.email, formData.password);
+      const userCredential = await doCreateUserWithEmailAndPass(formData.email, formData.password);
+      const user = userCredential.user;
+      
+      // Store user data in database
+      await apiService.loginUser({
+        uid: user.uid,
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: user.email || formData.email,
+        imageURL: user.photoURL || ''
+      });
+
       setSuccess('Account created successfully! Redirecting to dashboard...');
       setTimeout(() => {
         navigate('/dashboard');
@@ -82,7 +93,17 @@ const SignupPage: React.FC = () => {
   const handleGoogleSignup = async () => {
     try {
       setLoading(true);
-      await doSignInWithGoogle();
+      const userCredential = await doSignInWithGoogle();
+      const user = userCredential.user;
+      
+      // Store user data in database
+      await apiService.loginUser({
+        uid: user.uid,
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        imageURL: user.photoURL || ''
+      });
+
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Google signup failed');
