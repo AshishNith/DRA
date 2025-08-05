@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Calendar, User, CheckCircle, XCircle, Clock, Search, MapPin, ArrowLeft, Save, X, ChevronRight, ChevronLeft, Loader } from 'lucide-react';
+import { Plus, Edit, Trash2, Calendar, CheckCircle, XCircle, Clock, Search, MapPin, ArrowLeft, Save, X, ChevronRight, ChevronLeft, Loader } from 'lucide-react';
 import { apiService, Initiative, Location } from '../services/api';
 
 const ComplianceMaster: React.FC = () => {
@@ -102,6 +102,7 @@ const ComplianceMaster: React.FC = () => {
         setSubmitting(true);
         const newLocation = await apiService.createLocation({
           name: newLocationName.trim(),
+          description: '', // Add missing description field
           isActive: true
         });
         setLocations([...locations, newLocation]);

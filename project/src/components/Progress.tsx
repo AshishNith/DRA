@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, MapPin, CheckCircle, XCircle, Clock, Eye, Filter, RefreshCw, Shield, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Search, MapPin, CheckCircle, XCircle, Clock, Eye, RefreshCw, Shield } from 'lucide-react';
 import { apiService, Initiative, Location } from '../services/api';
 
 // Remove the old interface imports and define local interfaces
@@ -85,7 +85,7 @@ const Progress: React.FC = () => {
       if (typeof i.location === 'string') {
         return i.location === locationId;
       }
-      return i.location?._id === locationId;
+      return (i.location as any)?._id === locationId;
     });
     
     // Filter compliance for this location (empty for now)
@@ -643,4 +643,3 @@ const Progress: React.FC = () => {
 };
 
 export default Progress;
-                 

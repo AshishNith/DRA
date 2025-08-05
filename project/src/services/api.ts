@@ -36,6 +36,7 @@ export interface Initiative {
 export interface Location {
   _id?: string;
   name: string;
+  description: string;
   address?: string;
   city?: string;
   state?: string;
@@ -282,4 +283,4 @@ class ApiService {
 }
 
 export const apiService = new ApiService(API_BASE_URL);
-export type { ApiResponse };
+// export type { ApiResponse };
