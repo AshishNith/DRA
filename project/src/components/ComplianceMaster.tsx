@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash2, Calendar, CheckCircle, XCircle, Clock, Search, MapPin, ArrowLeft, Save, X, ChevronRight, ChevronLeft, Loader } from 'lucide-react';
 import { apiService, Initiative, Location } from '../services/api';
 
@@ -54,6 +54,31 @@ const ComplianceMaster: React.FC = () => {
       phone: ''
     }
   });
+
+  // Add ref to track focused element
+  const lastActiveElement = useRef<string | null>(null);
+  
+  // Focus management
+  const saveFocus = () => {
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && activeElement.id) {
+      lastActiveElement.current = activeElement.id;
+    }
+  };
+  
+  const restoreFocus = () => {
+    if (lastActiveElement.current) {
+      const elementToFocus = document.getElementById(lastActiveElement.current);
+      if (elementToFocus) {
+        elementToFocus.focus();
+      }
+    }
+  };
+  
+  // Call restoreFocus after state updates that might affect the DOM
+  useEffect(() => {
+    restoreFocus();
+  }, [locationFormData, formData, currentStep]);
 
   // Load data on component mount
   useEffect(() => {
@@ -363,10 +388,13 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
                       <input
-                        key="title-input"
+                        id="initiative-title"
                         type="text"
                         value={locationFormData.title}
-                        onChange={(e) => setLocationFormData(prev => ({...prev, title: e.target.value}))}
+                        onChange={(e) => {
+                          saveFocus();
+                          setLocationFormData(prev => ({...prev, title: e.target.value}));
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter initiative title"
                         required
@@ -376,9 +404,12 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                       <select
-                        key="description-select"
+                        id="initiative-description"
                         value={locationFormData.description}
-                        onChange={(e) => setLocationFormData(prev => ({...prev, description: e.target.value}))}
+                        onChange={(e) => {
+                          saveFocus();
+                          setLocationFormData(prev => ({...prev, description: e.target.value}));
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
                       >
@@ -399,9 +430,12 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Type of Permission</label>
                       <select
-                        key="permission-select"
+                        id="initiative-permission-type"
                         value={locationFormData.typeOfPermission}
-                        onChange={(e) => setLocationFormData(prev => ({...prev, typeOfPermission: e.target.value}))}
+                        onChange={(e) => {
+                          saveFocus();
+                          setLocationFormData(prev => ({...prev, typeOfPermission: e.target.value}));
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select Type</option>
@@ -415,9 +449,12 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Agency</label>
                       <select
-                        key="agency-select"
+                        id="initiative-agency"
                         value={locationFormData.agency}
-                        onChange={(e) => setLocationFormData(prev => ({...prev, agency: e.target.value}))}
+                        onChange={(e) => {
+                          saveFocus();
+                          setLocationFormData(prev => ({...prev, agency: e.target.value}));
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select Agency</option>
@@ -432,9 +469,12 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Applicable (Yes/No)</label>
                       <select
-                        key="applicable-select"
+                        id="initiative-applicable"
                         value={locationFormData.applicable}
-                        onChange={(e) => setLocationFormData(prev => ({...prev, applicable: e.target.value}))}
+                        onChange={(e) => {
+                          saveFocus();
+                          setLocationFormData(prev => ({...prev, applicable: e.target.value}));
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select</option>
@@ -468,15 +508,18 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Registered (Yes/No)</label>
                       <select
-                        key="registered-select"
+                        id="reg-registered"
                         value={locationFormData.registrationInfo.registered}
-                        onChange={(e) => setLocationFormData(prev => ({
-                          ...prev,
-                          registrationInfo: {
-                            ...prev.registrationInfo,
-                            registered: e.target.value
-                          }
-                        }))}
+                        onChange={(e) => {
+                          saveFocus();
+                          setLocationFormData(prev => ({
+                            ...prev,
+                            registrationInfo: {
+                              ...prev.registrationInfo,
+                              registered: e.target.value
+                            }
+                          }));
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select</option>
@@ -488,16 +531,19 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">License Number</label>
                       <input
-                        key="license-input"
+                        id="reg-license"
                         type="text"
                         value={locationFormData.registrationInfo.licenseNumber}
-                        onChange={(e) => setLocationFormData(prev => ({
-                          ...prev,
-                          registrationInfo: {
-                            ...prev.registrationInfo,
-                            licenseNumber: e.target.value
-                          }
-                        }))}
+                        onChange={(e) => {
+                          saveFocus();
+                          setLocationFormData(prev => ({
+                            ...prev,
+                            registrationInfo: {
+                              ...prev.registrationInfo,
+                              licenseNumber: e.target.value
+                            }
+                          }));
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter license number"
                       />
@@ -506,16 +552,19 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Validity</label>
                       <input
-                        key="validity-input"
+                        id="reg-validity"
                         type="date"
                         value={locationFormData.registrationInfo.validity}
-                        onChange={(e) => setLocationFormData(prev => ({
-                          ...prev,
-                          registrationInfo: {
-                            ...prev.registrationInfo,
-                            validity: e.target.value
-                          }
-                        }))}
+                        onChange={(e) => {
+                          saveFocus();
+                          setLocationFormData(prev => ({
+                            ...prev,
+                            registrationInfo: {
+                              ...prev.registrationInfo,
+                              validity: e.target.value
+                            }
+                          }));
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
@@ -523,16 +572,19 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Quantity / Manpower Nos</label>
                       <input
-                        key="quantity-input"
+                        id="reg-quantity"
                         type="text"
                         value={locationFormData.registrationInfo.quantity}
-                        onChange={(e) => setLocationFormData(prev => ({
-                          ...prev,
-                          registrationInfo: {
-                            ...prev.registrationInfo,
-                            quantity: e.target.value
-                          }
-                        }))}
+                        onChange={(e) => {
+                          saveFocus();
+                          setLocationFormData(prev => ({
+                            ...prev,
+                            registrationInfo: {
+                              ...prev.registrationInfo,
+                              quantity: e.target.value
+                            }
+                          }));
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter quantity or manpower numbers"
                       />
@@ -541,15 +593,18 @@ const ComplianceMaster: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
                       <textarea
-                        key="remarks-textarea"
+                        id="reg-remarks"
                         value={locationFormData.registrationInfo.remarks}
-                        onChange={(e) => setLocationFormData(prev => ({
-                          ...prev,
-                          registrationInfo: {
-                            ...prev.registrationInfo,
-                            remarks: e.target.value
-                          }
-                        }))}
+                        onChange={(e) => {
+                          saveFocus();
+                          setLocationFormData(prev => ({
+                            ...prev,
+                            registrationInfo: {
+                              ...prev.registrationInfo,
+                              remarks: e.target.value
+                            }
+                          }));
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
                         placeholder="Enter any additional remarks"
                       />
@@ -918,11 +973,13 @@ const ComplianceMaster: React.FC = () => {
                   Title
                 </label>
                 <input
-                  key="form-title-input"
+                  id="compliance-title"
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    saveFocus();
+                    setFormData(prev => ({ ...prev, title: e.target.value }));
+                  }}
                   className="input-field"
                   required
                 />
@@ -932,11 +989,13 @@ const ComplianceMaster: React.FC = () => {
                   Due Date
                 </label>
                 <input
-                  key="form-date-input"
+                  id="compliance-date"
                   type="date"
                   value={formData.dueDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    saveFocus();
+                    setFormData(prev => ({ ...prev, dueDate: e.target.value }));
+                  }}
                   className="input-field"
                   required
                 />
@@ -947,10 +1006,12 @@ const ComplianceMaster: React.FC = () => {
                 Description
               </label>
               <select
-                key="form-description-select"
+                id="compliance-description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))
-                }
+                onChange={(e) => {
+                  saveFocus();
+                  setFormData(prev => ({ ...prev, description: e.target.value }));
+                }}
                 className="input-field"
                 required
               >
@@ -973,10 +1034,12 @@ const ComplianceMaster: React.FC = () => {
                   Status
                 </label>
                 <select
-                  key="form-status-select"
+                  id="compliance-status"
                   value={formData.status}
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))
-                  }
+                  onChange={(e) => {
+                    saveFocus();
+                    setFormData(prev => ({ ...prev, status: e.target.value as any }));
+                  }}
                   className="input-field"
                 >
                   <option value="pending">Pending</option>
@@ -989,10 +1052,12 @@ const ComplianceMaster: React.FC = () => {
                   Work Location
                 </label>
                 <select
-                  key="form-location-select"
+                  id="compliance-location"
                   value={formData.assignedTo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, assignedTo: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    saveFocus();
+                    setFormData(prev => ({ ...prev, assignedTo: e.target.value }));
+                  }}
                   className="input-field"
                   required
                 >
