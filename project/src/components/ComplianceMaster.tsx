@@ -354,16 +354,20 @@ const ComplianceMaster: React.FC = () => {
   };
 
   const handleEdit = (item: Initiative) => {
-    setEditingItem(item);
-    setFormData({
-      title: item.title,
-      description: item.description,
-      status: item.status as any,
-      dueDate: item.endDate || '',
-      assignedTo: item.location || '',
-    });
-    setShowForm(true);
-  };
+  setEditingItem(item);
+  setFormData({
+    title: item.title,
+    description: item.description,
+    status: item.status as any,
+    dueDate: item.endDate ?? '',
+    assignedTo:
+      typeof item.location === 'string'
+        ? item.location
+        : item.location?.name ?? '', // or use `.id` if needed
+  });
+  setShowForm(true);
+};
+
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this initiative?')) {

@@ -183,12 +183,12 @@ const DownloadDetails: React.FC = () => {
       const workbook = XLSX.utils.book_new();
 
       // Summary sheet with all data
-      const summaryHeaders = [
-        'Title', 'Description', 'Category', 'Status', 'Location', 'Budget', 'Participants',
-        'Start Date', 'End Date', 'Contact Person', 'Contact Email', 'Contact Phone',
-        'Agency', 'Type of Permission', 'Applicable', 'Compliance Status', 'License Number', 
-        'Validity', 'Registered', 'Quantity', 'Remarks', 'Created At'
-      ];
+      // const summaryHeaders = [
+      //   'Title', 'Description', 'Category', 'Status', 'Location', 'Budget', 'Participants',
+      //   'Start Date', 'End Date', 'Contact Person', 'Contact Email', 'Contact Phone',
+      //   'Agency', 'Type of Permission', 'Applicable', 'Compliance Status', 'License Number', 
+      //   'Validity', 'Registered', 'Quantity', 'Remarks', 'Created At'
+      // ];
 
       const summaryData = filteredInitiatives.map(initiative => ({
         'Title': initiative.title || '',
@@ -212,7 +212,7 @@ const DownloadDetails: React.FC = () => {
         'Registered': initiative.registrationInfo?.registered || '',
         'Quantity': initiative.registrationInfo?.quantity || '',
         'Remarks': initiative.registrationInfo?.remarks || '',
-        'Created At': initiative.createdAt ? new Date(initiative.createdAt).toLocaleDateString() : ''
+        // 'Created At': initiative.createdAt ? new Date(initiative.createdAt).toLocaleDateString() : ''
       }));
 
       // Add summary sheet
@@ -277,7 +277,7 @@ const DownloadDetails: React.FC = () => {
           'Validity': initiative.registrationInfo?.validity || '',
           'Quantity': initiative.registrationInfo?.quantity || '',
           'Remarks': initiative.registrationInfo?.remarks || '',
-          'Created At': initiative.createdAt ? new Date(initiative.createdAt).toLocaleDateString() : ''
+          // 'Created At': initiative.createdAt ? new Date(initiative.createdAt).toLocaleDateString() : ''
         }));
 
         // Create worksheet with summary at top and detailed data below
@@ -287,7 +287,7 @@ const DownloadDetails: React.FC = () => {
         XLSX.utils.sheet_add_json(worksheet, [{}], { skipHeader: true, origin: -1 });
         
         // Add detailed data headers
-        const detailHeaders = ['DETAILED INITIATIVES DATA'];
+        // const detailHeaders = ['DETAILED INITIATIVES DATA'];
         XLSX.utils.sheet_add_json(worksheet, [{ 'Title': 'DETAILED INITIATIVES DATA' }], { skipHeader: true, origin: -1 });
         
         // Add detailed initiatives data

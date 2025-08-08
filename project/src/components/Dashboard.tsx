@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Users, Shield, Building2, TrendingUp, Calendar, Bell, Search, RefreshCw, Loader } from 'lucide-react';
+import { BarChart3, Users, Shield, Building2, TrendingUp, Calendar, Bell, Search, RefreshCw, Loader, X } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { apiService } from '../services/api';
 import Layout from './Layout';
 import DashboardOverview from './DashboardOverview';
+import Notification from './Notification';
 
 interface DashboardStats {
   overview: {
@@ -35,6 +36,8 @@ const Dashboard: React.FC = () => {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
     // Update time every minute
@@ -131,6 +134,57 @@ const Dashboard: React.FC = () => {
     ];
   };
 
+  const NotificationPopup: React.FC = () => (
+    showNotificationPopup ? (
+      <>
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowNotificationPopup(false)}
+        />
+        
+        {/* Popup */}
+        <div className="absolute top-full right-0 mt-2 z-50 w-96 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-500">{notificationCount} active</span>
+                <button
+                  onClick={() => setShowNotificationPopup(false)}
+                  className="p-1 hover:bg-gray-200 rounded transition-colors"
+                  title="Close notifications"
+                >
+                  <X className="h-4 w-4 text-gray-400" />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="max-h-96 overflow-y-auto">
+            <Notification 
+              className="" 
+              onNotificationCountChange={(count) => {
+                console.log('Notification count changed:', count);
+                setNotificationCount(count);
+              }}
+              isPopupMode={true}
+            />
+          </div>
+          
+          <div className="p-4 border-t border-gray-100 bg-gray-50">
+            <button 
+              onClick={() => setShowNotificationPopup(false)}
+              className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-2 hover:bg-blue-50 rounded transition-colors"
+            >
+              View All Notifications
+            </button>
+          </div>
+        </div>
+      </>
+    ) : null
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -172,6 +226,9 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <Layout title="Dashboard Overview">
         <div className="space-y-4 lg:space-y-6">
+          {/* Notification Component at the top */}
+          <Notification className="mb-6" />
+          
           {/* Welcome Header */}
           <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full -translate-y-12 lg:-translate-y-16 translate-x-12 lg:translate-x-16 opacity-50"></div>
@@ -221,12 +278,29 @@ const Dashboard: React.FC = () => {
                 >
                   <RefreshCw className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
                 </button>
-                <button className="relative p-2 lg:p-3 bg-gray-100 hover:bg-gray-200 rounded-lg lg:rounded-xl transition-colors duration-200">
-                  <Bell className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
-                  {dashboardStats && dashboardStats.overview.overdueCompliance > 0 && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 lg:w-3 lg:h-3 bg-red-500 rounded-full"></span>
-                  )}
-                </button>
+                
+                {/* Notification Icon with Popup */}
+                <div className="relative">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Notification button clicked, current state:', showNotificationPopup);
+                      setShowNotificationPopup(!showNotificationPopup);
+                    }}
+                    className="relative p-2 lg:p-3 bg-gray-100 hover:bg-gray-200 rounded-lg lg:rounded-xl transition-colors duration-200"
+                    title="View notifications"
+                  >
+                    <Bell className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
+                    {notificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium animate-pulse">
+                        {notificationCount > 9 ? '9+' : notificationCount}
+                      </span>
+                    )}
+                  </button>
+                  
+                  <NotificationPopup />
+                </div>
+                
                 <div className="relative hidden sm:block">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input

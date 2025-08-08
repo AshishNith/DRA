@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, MapPin, CheckCircle, XCircle, Clock, Eye, RefreshCw, Shield, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Search, MapPin, CheckCircle, XCircle, Clock, Eye, RefreshCw, Shield, Edit, Trash2, X } from 'lucide-react';
 import { apiService, Initiative, Location } from '../services/api';
 
 // Remove the old interface imports and define local interfaces
@@ -37,7 +37,7 @@ const Progress: React.FC = () => {
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  // const [activeTab, setActiveTab] = useState<'initiatives' | 'compliance'>('initiatives');
+  const [searchMode, setSearchMode] = useState<'locations' | 'initiatives'>('locations');
   const [showWorkLocations, setShowWorkLocations] = useState(false);
   const [showAddLocationForm, setShowAddLocationForm] = useState(false);
   const [newLocationName, setNewLocationName] = useState('');
@@ -60,6 +60,54 @@ const Progress: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    // Check if we need to edit an initiative from notification
+    const editInitiativeId = localStorage.getItem('editInitiativeId');
+    const editInitiativeLocation = localStorage.getItem('editInitiativeLocation');
+    
+    if (editInitiativeId && initiatives.length > 0) {
+      // Find the initiative to edit
+      const initiativeToEdit = initiatives.find(i => i._id === editInitiativeId);
+      
+      if (initiativeToEdit) {
+        // Find the location
+        const location = locations.find(l => 
+          l.name === editInitiativeLocation || 
+          l._id === (typeof initiativeToEdit.location === 'string' ? initiativeToEdit.location : initiativeToEdit.location?._id)
+        );
+        
+        if (location) {
+          // Set the selected location and prepare for editing
+          setSelectedLocation(location._id!);
+          
+          // Set up the form for editing
+          setEditingItem(initiativeToEdit);
+          setFormData({
+            title: initiativeToEdit.title,
+            description: initiativeToEdit.description,
+            status: initiativeToEdit.status,
+            dueDate: initiativeToEdit.endDate || '',
+            assignedTo: typeof initiativeToEdit.location === 'string' ? initiativeToEdit.location : initiativeToEdit.location?._id || '',
+          });
+          setShowForm(true);
+          
+          // Clear the localStorage
+          localStorage.removeItem('editInitiativeId');
+          localStorage.removeItem('editInitiativeLocation');
+          
+          // Show a message to user
+          setTimeout(() => {
+            const element = document.getElementById('edit-form-title');
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.focus();
+            }
+          }, 500);
+        }
+      }
+    }
+  }, [initiatives, locations]);
 
   const fetchData = async () => {
     try {
@@ -204,6 +252,23 @@ const Progress: React.FC = () => {
     (location.address && location.address.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Add initiative search functionality
+  const filteredInitiatives = initiatives.filter(initiative => {
+    const matchesSearch = initiative.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         initiative.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (typeof initiative.location === 'object' && 
+                          (initiative.location as any)?.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesSearch;
+  });
+
+  // Get initiatives with their location names for display
+  const initiativesWithLocation = filteredInitiatives.map(initiative => ({
+    ...initiative,
+    locationName: typeof initiative.location === 'object' 
+      ? (initiative.location as any)?.name 
+      : locations.find(l => l._id === initiative.location)?.name || 'Unknown Location'
+  }));
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -225,16 +290,20 @@ const Progress: React.FC = () => {
   }
 
   const handleEdit = (item: Initiative) => {
-    setEditingItem(item);
-    setFormData({
-      title: item.title,
-      description: item.description,
-      status: item.status,
-      dueDate: item.endDate || '',
-      assignedTo: item.location,
-    });
-    setShowForm(true);
-  };
+  setEditingItem(item);
+  setFormData({
+    title: item.title,
+    description: item.description,
+    status: item.status,
+    dueDate: item.endDate ?? '',
+    assignedTo:
+      typeof item.location === 'string'
+        ? item.location
+        : item.location?.name ?? '', // or .id if form expects ID
+  });
+  setShowForm(true);
+};
+
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this initiative?')) {
@@ -448,10 +517,35 @@ const Progress: React.FC = () => {
 
         {/* Add edit form */}
         {showForm && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingItem ? 'Edit Initiative' : 'Add Initiative'}
-            </h3>
+          <div className="bg-white rounded-xl shadow-lg border-2 border-blue-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {editingItem ? (
+                  <span className="flex items-center space-x-2">
+                    <span>Edit Initiative</span>
+                    <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                      From Notification
+                    </span>
+                  </span>
+                ) : 'Add Initiative'}
+              </h3>
+              <button
+                onClick={resetForm}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {editingItem && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Notice:</strong> This initiative was opened for editing from a notification alert. 
+                  Please update the details as needed, especially expiry dates and registration information.
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -459,6 +553,7 @@ const Progress: React.FC = () => {
                     Title
                   </label>
                   <input
+                    id="edit-form-title"
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -560,20 +655,21 @@ const Progress: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  {submitting ? 'Saving...' : (editingItem ? 'Update' : 'Save')}
-                </button>
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                  className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
                 >
                   Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {submitting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                  <span>{submitting ? 'Saving...' : (editingItem ? 'Update Initiative' : 'Save Initiative')}</span>
                 </button>
               </div>
             </form>
@@ -825,100 +921,302 @@ const Progress: React.FC = () => {
           </div>
         )}
 
-        {/* Search Bar */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search location..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
-        {/* Locations Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          {filteredLocationsForOverview.map((location) => {
-            const progress = getLocationProgress(location._id!);
-            return (
-              <div
-                key={location._id}
-                onClick={() => setSelectedLocation(location._id!)}
-                className="bg-white border-2 border-teal-300 rounded-xl p-6 hover:shadow-md transition-all duration-200 cursor-pointer hover:border-teal-400 group relative"
-              >
+        {/* Enhanced Search Bar with Toggle */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="flex items-center space-x-4">
+              <h3 className="text-lg font-semibold text-gray-900">Search & Filter</h3>
+              <div className="flex bg-gray-100 rounded-lg p-1">
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteLocation(location);
+                  onClick={() => {
+                    setSearchMode('locations');
+                    setSearchTerm('');
                   }}
-                  className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                  disabled={submitting}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    searchMode === 'locations'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
-                  <XCircle className="h-4 w-4" />
+                  <MapPin className="h-4 w-4 inline mr-2" />
+                  Locations
                 </button>
-                <div className="flex items-center justify-center mb-4">
-                  <MapPin className="h-6 w-6 text-teal-600 group-hover:scale-110 transition-transform duration-200" />
-                </div>
-                <h3 className="text-center font-semibold text-gray-900 text-sm leading-tight pr-6 mb-3">
-                  {location.name}
-                </h3>
-                
-                {/* Progress Info */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-600">Progress:</span>
-                    <span className={`font-medium ${
-                      progress.percentage >= 80 ? 'text-green-600' :
-                      progress.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
-                      {progress.percentage}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(progress.percentage)}`}
-                      style={{ width: `${progress.percentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>{progress.registered}/{progress.applicable} items</span>
-                    <span>₹{Math.round(progress.initiatives.reduce((sum, i) => sum + i.budget, 0) / 100000)}L</span>
-                  </div>
-                </div>
+                <button
+                  onClick={() => {
+                    setSearchMode('initiatives');
+                    setSearchTerm('');
+                  }}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    searchMode === 'initiatives'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Shield className="h-4 w-4 inline mr-2" />
+                  Initiatives
+                </button>
               </div>
-            );
-          })}
+            </div
+            >
+            
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder={
+                  searchMode === 'locations' 
+                    ? "Search locations..." 
+                    : "Search initiatives by name, description, or location..."
+                }
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Search Results Summary */}
+          {searchTerm && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-700">
+                {searchMode === 'locations' ? (
+                  <>
+                    Found <strong>{filteredLocations.length}</strong> locations matching "{searchTerm}"
+                  </>
+                ) : (
+                  <>
+                    Found <strong>{filteredInitiatives.length}</strong> initiatives matching "{searchTerm}"
+                  </>
+                )}
+              </p>
+            </div>
+          )}
         </div>
 
-        {filteredLocationsForOverview.length === 0 && searchTerm && (
-          <div className="text-center py-12">
-            <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No locations found</h3>
-            <p className="text-gray-500 mb-4">Try adjusting your search terms</p>
-            <button
-              onClick={() => {
-                setNewLocationName(searchTerm);
-                setShowAddLocationForm(true);
-              }}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Add "{searchTerm}" as new location
-            </button>
+        {/* Show search results for initiatives */}
+        {searchMode === 'initiatives' && searchTerm && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">Initiative Search Results</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {filteredInitiatives.length} initiatives found
+              </p>
+            </div>
+            
+            <div className="p-6">
+              {initiativesWithLocation.length > 0 ? (
+                <div className="space-y-4">
+                  {initiativesWithLocation.map((initiative) => (
+                    <div key={initiative._id} className="bg-gray-50 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-start space-x-3">
+                          {getStatusIcon(initiative.status)}
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900">{initiative.title}</h3>
+                            <p className="text-gray-600 mt-1">{initiative.description}</p>
+                            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                              <div className="flex items-center">
+                                <MapPin className="h-4 w-4 mr-1" />
+                                <span>{initiative.locationName}</span>
+                              </div>
+                              <div className="flex items-center">
+                                <Clock className="h-4 w-4 mr-1" />
+                                <span>{new Date(initiative.startDate).toLocaleDateString()}</span>
+                              </div>
+                              {initiative.budget > 0 && (
+                                <div>
+                                  <span>Budget: ₹{initiative.budget.toLocaleString()}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(initiative.status)}`}>
+                            {initiative.status}
+                          </span>
+                          <button
+                            onClick={() => {
+                              const location = locations.find(l => l.name === initiative.locationName);
+                              if (location) {
+                                setSelectedLocation(location._id!);
+                              }
+                            }}
+                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          >
+                            View Details
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Additional Initiative Details */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Category</p>
+                          <p className="text-sm font-medium text-gray-900">{initiative.category}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Participants</p>
+                          <p className="text-sm font-medium text-gray-900">{initiative.participants}</p>
+                        </div>
+                        {initiative.endDate && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">End Date</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {new Date(initiative.endDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Registration Info Preview */}
+                      {initiative.registrationInfo?.registered === 'Yes' && (
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                          <p className="text-xs text-blue-600 mb-2 font-medium">Registration Information</p>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            {initiative.registrationInfo.licenseNumber && (
+                              <div>
+                                <span className="text-gray-600">License: </span>
+                                <span className="font-medium">{initiative.registrationInfo.licenseNumber}</span>
+                              </div>
+                            )}
+                            {initiative.registrationInfo.validity && (
+                              <div>
+                                <span className="text-gray-600">Valid Until: </span>
+                                <span className="font-medium">{new Date(initiative.registrationInfo.validity).toLocaleDateString()}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Search className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No initiatives found</h3>
+                  <p className="text-gray-500">
+                    Try adjusting your search terms or check the spelling
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {locations.length === 0 && (
-          <div className="text-center py-12">
-            <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No locations available</h3>
-            <p className="text-gray-500 mb-4">Start by adding your first work location</p>
-            <button
-              onClick={() => setShowAddLocationForm(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Add First Location
-            </button>
+        {/* Locations Grid - Only show when in locations mode or no search */}
+        {(searchMode === 'locations' || !searchTerm) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {(searchTerm ? filteredLocations : locations).map((location) => {
+              const progress = getLocationProgress(location._id!);
+              
+              return (
+                <div
+                  key={location._id}
+                  onClick={() => setSelectedLocation(location._id!)}
+                  className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-300 group"
+                >
+                  <div className="space-y-4">
+                    {/* Location Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-teal-100 rounded-lg group-hover:bg-teal-200 transition-colors">
+                          <MapPin className="h-6 w-6 text-teal-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {location.name}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {location.city && location.state ? `${location.city}, ${location.state}` : 'Location'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Progress Badge */}
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        progress.percentage >= 80 ? 'bg-green-100 text-green-800' :
+                        progress.percentage >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {progress.percentage}%
+                      </div>
+                    </div>
+
+                    {/* Location Details */}
+                    {location.address && (
+                      <div className="text-sm text-gray-600">
+                        <p className="truncate">{location.address}</p>
+                        {location.zipCode && (
+                          <p className="text-xs text-gray-500 mt-1">ZIP: {location.zipCode}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Work Summary */}
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 font-medium">Initiatives Overview</span>
+                        <span className="text-xs text-gray-500">Click to view details</span>
+                      </div>
+                      
+                      {progress.applicable > 0 ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Total: {progress.applicable}</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              Active/Completed: {progress.registered}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-green-600">Completed: {progress.initiatives.filter(i => i.status === 'Completed').length}</span>
+                              <span className="text-blue-600">Active: {progress.initiatives.filter(i => i.status === 'Active').length}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(progress.percentage)}`}
+                                style={{ width: `${progress.percentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-500 italic">No initiatives assigned yet</div>
+                      )}
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="bg-blue-50 rounded-lg p-2">
+                        <div className="text-lg font-bold text-blue-600">{progress.applicable}</div>
+                        <div className="text-xs text-blue-600">Total</div>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-2">
+                        <div className="text-lg font-bold text-green-600">{progress.registered}</div>
+                        <div className="text-xs text-green-600">Active/Done</div>
+                      </div>
+                      <div className="bg-purple-50 rounded-lg p-2">
+                        <div className="text-lg font-bold text-purple-600">
+                          ₹{Math.round(progress.initiatives.reduce((sum, i) => sum + i.budget, 0) / 100000)}L
+                        </div>
+                        <div className="text-xs text-purple-600">Budget</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -978,211 +1276,302 @@ const Progress: React.FC = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative max-w-md mx-auto">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search locations..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
-        />
+      {/* Enhanced Search Bar with Toggle */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+          <div className="flex items-center space-x-4">
+            <h3 className="text-lg font-semibold text-gray-900">Search & Filter</h3>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => {
+                  setSearchMode('locations');
+                  setSearchTerm('');
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  searchMode === 'locations'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <MapPin className="h-4 w-4 inline mr-2" />
+                Locations
+              </button>
+              <button
+                onClick={() => {
+                  setSearchMode('initiatives');
+                  setSearchTerm('');
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  searchMode === 'initiatives'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Shield className="h-4 w-4 inline mr-2" />
+                Initiatives
+              </button>
+            </div>
+          </div
+          >
+          
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={
+                searchMode === 'locations' 
+                  ? "Search locations..." 
+                  : "Search initiatives by name, description, or location..."
+              }
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Search Results Summary */}
+        {searchTerm && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-700">
+              {searchMode === 'locations' ? (
+                <>
+                  Found <strong>{filteredLocations.length}</strong> locations matching "{searchTerm}"
+                </>
+              ) : (
+                <>
+                  Found <strong>{filteredInitiatives.length}</strong> initiatives matching "{searchTerm}"
+                </>
+              )}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Locations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredLocations.map((location) => {
-          const progress = getLocationProgress(location._id!);
+      {/* Show search results for initiatives */}
+      {searchMode === 'initiatives' && searchTerm && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="p-6 border-b border-gray-200 bg-gray-50">
+            <h3 className="text-lg font-semibold text-gray-900">Initiative Search Results</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {filteredInitiatives.length} initiatives found
+            </p>
+          </div>
           
-          return (
-            <div
-              key={location._id}
-              onClick={() => setSelectedLocation(location._id!)}
-              className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-300 group"
-            >
+          <div className="p-6">
+            {initiativesWithLocation.length > 0 ? (
               <div className="space-y-4">
-                {/* Location Header */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-teal-100 rounded-lg group-hover:bg-teal-200 transition-colors">
-                      <MapPin className="h-6 w-6 text-teal-600" />
+                {initiativesWithLocation.map((initiative) => (
+                  <div key={initiative._id} className="bg-gray-50 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-start space-x-3">
+                        {getStatusIcon(initiative.status)}
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900">{initiative.title}</h3>
+                          <p className="text-gray-600 mt-1">{initiative.description}</p>
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 mr-1" />
+                              <span>{initiative.locationName}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 mr-1" />
+                              <span>{new Date(initiative.startDate).toLocaleDateString()}</span>
+                            </div>
+                            {initiative.budget > 0 && (
+                              <div>
+                                <span>Budget: ₹{initiative.budget.toLocaleString()}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(initiative.status)}`}>
+                          {initiative.status}
+                        </span>
+                        <button
+                          onClick={() => {
+                            const location = locations.find(l => l.name === initiative.locationName);
+                            if (location) {
+                              setSelectedLocation(location._id!);
+                            }
+                          }}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          View Details
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                        {location.name}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {location.city && location.state ? `${location.city}, ${location.state}` : 'Location'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Progress Badge */}
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    progress.percentage >= 80 ? 'bg-green-100 text-green-800' :
-                    progress.percentage >= 50 ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {progress.percentage}%
-                  </div>
-                </div>
 
-                {/* Location Details */}
-                {location.address && (
-                  <div className="text-sm text-gray-600">
-                    <p className="truncate">{location.address}</p>
-                    {location.zipCode && (
-                      <p className="text-xs text-gray-500 mt-1">ZIP: {location.zipCode}</p>
+                    {/* Additional Initiative Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Category</p>
+                        <p className="text-sm font-medium text-gray-900">{initiative.category}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Participants</p>
+                        <p className="text-sm font-medium text-gray-900">{initiative.participants}</p>
+                      </div>
+                      {initiative.endDate && (
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">End Date</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {new Date(initiative.endDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Registration Info Preview */}
+                    {initiative.registrationInfo?.registered === 'Yes' && (
+                      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                        <p className="text-xs text-blue-600 mb-2 font-medium">Registration Information</p>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          {initiative.registrationInfo.licenseNumber && (
+                            <div>
+                              <span className="text-gray-600">License: </span>
+                              <span className="font-medium">{initiative.registrationInfo.licenseNumber}</span>
+                            </div>
+                          )}
+                          {initiative.registrationInfo.validity && (
+                            <div>
+                              <span className="text-gray-600">Valid Until: </span>
+                              <span className="font-medium">{new Date(initiative.registrationInfo.validity).toLocaleDateString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
-
-                {/* Work Summary */}
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 font-medium">Initiatives Overview</span>
-                    <span className="text-xs text-gray-500">Click to view details</span>
-                  </div>
-                  
-                  {progress.applicable > 0 ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Total: {progress.applicable}</span>
-                        <span className="text-sm font-medium text-gray-900">
-                          Active/Completed: {progress.registered}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-green-600">Completed: {progress.initiatives.filter(i => i.status === 'Completed').length}</span>
-                          <span className="text-blue-600">Active: {progress.initiatives.filter(i => i.status === 'Active').length}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(progress.percentage)}`}
-                            style={{ width: `${progress.percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-gray-500 italic">No initiatives assigned yet</div>
-                  )}
-                </div>
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-blue-50 rounded-lg p-2">
-                    <div className="text-lg font-bold text-blue-600">{progress.applicable}</div>
-                    <div className="text-xs text-blue-600">Total</div>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-2">
-                    <div className="text-lg font-bold text-green-600">{progress.registered}</div>
-                    <div className="text-xs text-green-600">Active/Done</div>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-2">
-                    <div className="text-lg font-bold text-purple-600">
-                      ₹{Math.round(progress.initiatives.reduce((sum, i) => sum + i.budget, 0) / 100000)}L
-                    </div>
-                    <div className="text-xs text-purple-600">Budget</div>
-                  </div>
-                </div>
+                ))}
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Initiative Distribution by Location Bar Chart */}
-      {initiatives.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Initiative Distribution by Location</h3>
-          <div className="space-y-4">
-            {locationInitiativeStats.slice(0, 10).map((location, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">{location.name}</span>
-                  <div className="text-right">
-                    <span className="text-sm text-gray-900 font-medium">{location.initiatives} initiatives</span>
-                    <div className="text-xs text-gray-500">₹{(location.budget / 100000).toFixed(1)}L budget</div>
-                  </div>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-gradient-to-r from-teal-500 to-blue-600 h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.max(location.percentage, 2)}%` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>{location.percentage.toFixed(1)}% of total initiatives</span>
-                  <span>Completed: {location.completed} | Active: {location.active}</span>
-                </div>
+            ) : (
+              <div className="text-center py-12">
+                <Search className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No initiatives found</h3>
+                <p className="text-gray-500">
+                  Try adjusting your search terms or check the spelling
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
 
-      {/* Top Performing Locations */}
-      {initiatives.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Performing Locations</h3>
-            <div className="space-y-3">
-              {locationInitiativeStats
-                .filter(location => location.initiatives > 0)
-                .slice(0, 5)
-                .map((location, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => {
-                    const loc = locations.find(l => l.name === location.name);
-                    if (loc) setSelectedLocation(loc._id!);
-                  }}>
+      {/* Locations Grid - Only show when in locations mode or no search */}
+      {(searchMode === 'locations' || !searchTerm) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {(searchTerm ? filteredLocations : locations).map((location) => {
+            const progress = getLocationProgress(location._id!);
+            
+            return (
+              <div
+                key={location._id}
+                onClick={() => setSelectedLocation(location._id!)}
+                className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-300 group"
+              >
+                <div className="space-y-4">
+                  {/* Location Header */}
+                  <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-teal-600">{index + 1}</span>
+                      <div className="p-2 bg-teal-100 rounded-lg group-hover:bg-teal-200 transition-colors">
+                        <MapPin className="h-6 w-6 text-teal-600" />
                       </div>
-                      <span className="font-medium text-gray-900">{location.name}</span>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                          {location.name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {location.city && location.state ? `${location.city}, ${location.state}` : 'Location'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">{location.initiatives} initiatives</div>
-                      <div className="text-xs text-gray-500">₹{(location.budget / 100000).toFixed(1)}L</div>
+                    
+                    {/* Progress Badge */}
+                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      progress.percentage >= 80 ? 'bg-green-100 text-green-800' :
+                      progress.percentage >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {progress.percentage}%
                     </div>
                   </div>
-                ))}
-            </div>
-          </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Analytics</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <span className="text-sm text-gray-600">Overall Completion Rate</span>
-                <span className="font-semibold text-green-600">
-                  {initiatives.length > 0 ? Math.round((initiatives.filter(i => i.status === 'Completed').length / initiatives.length) * 100) : 0}%
-                </span>
+                  {/* Location Details */}
+                  {location.address && (
+                    <div className="text-sm text-gray-600">
+                      <p className="truncate">{location.address}</p>
+                      {location.zipCode && (
+                        <p className="text-xs text-gray-500 mt-1">ZIP: {location.zipCode}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Work Summary */}
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 font-medium">Initiatives Overview</span>
+                      <span className="text-xs text-gray-500">Click to view details</span>
+                    </div>
+                    
+                    {progress.applicable > 0 ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Total: {progress.applicable}</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            Active/Completed: {progress.registered}
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-green-600">Completed: {progress.initiatives.filter(i => i.status === 'Completed').length}</span>
+                            <span className="text-blue-600">Active: {progress.initiatives.filter(i => i.status === 'Active').length}</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(progress.percentage)}`}
+                              style={{ width: `${progress.percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-500 italic">No initiatives assigned yet</div>
+                    )}
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-blue-50 rounded-lg p-2">
+                      <div className="text-lg font-bold text-blue-600">{progress.applicable}</div>
+                      <div className="text-xs text-blue-600">Total</div>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-2">
+                      <div className="text-lg font-bold text-green-600">{progress.registered}</div>
+                      <div className="text-xs text-green-600">Active/Done</div>
+                    </div>
+                    <div className="bg-purple-50 rounded-lg p-2">
+                      <div className="text-lg font-bold text-purple-600">
+                        ₹{Math.round(progress.initiatives.reduce((sum, i) => sum + i.budget, 0) / 100000)}L
+                      </div>
+                      <div className="text-xs text-purple-600">Budget</div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                <span className="text-sm text-gray-600">Active Initiatives Rate</span>
-                <span className="font-semibold text-blue-600">
-                  {initiatives.length > 0 ? Math.round((initiatives.filter(i => i.status === 'Active').length / initiatives.length) * 100) : 0}%
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                <span className="text-sm text-gray-600">Avg Initiatives per Location</span>
-                <span className="font-semibold text-purple-600">
-                  {locations.length > 0 ? Math.round(initiatives.length / locations.length) : 0}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
-                <span className="text-sm text-gray-600">Total Budget</span>
-                <span className="font-semibold text-orange-600">
-                  ₹{(initiatives.reduce((sum, i) => sum + (i.budget || 0), 0) / 10000000).toFixed(1)}Cr
-                </span>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
       )}
     </div>
