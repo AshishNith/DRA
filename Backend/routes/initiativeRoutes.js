@@ -112,6 +112,18 @@ router.post('/', async (req, res) => {
         phone: req.body.contactPerson?.phone || ''
       },
       complianceStatus: req.body.complianceStatus || 'Pending Review',
+      // Add new tracking fields
+      statusCounts: {
+        planning: req.body.statusCounts?.planning || 0,
+        active: req.body.statusCounts?.active || 0,
+        completed: req.body.statusCounts?.completed || 0,
+        onHold: req.body.statusCounts?.onHold || 0,
+        cancelled: req.body.statusCounts?.cancelled || 0
+      },
+      projectPhase: req.body.projectPhase || 'Initial',
+      riskLevel: req.body.riskLevel || 'Low',
+      complianceScore: req.body.complianceScore || 0,
+      lastUpdated: req.body.lastUpdated ? new Date(req.body.lastUpdated) : new Date(),
       isActive: req.body.isActive !== undefined ? req.body.isActive : true
     };
 

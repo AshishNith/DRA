@@ -5,32 +5,44 @@ export interface Initiative {
   _id?: string;
   title: string;
   description: string;
-  location: string;
-  category: string;
+  location: string | Location;
+  category: 'Environmental' | 'Safety' | 'Legal' | 'Financial' | 'Operational' | 'Education' | 'Healthcare' | 'Technology' | 'Community' | 'Other';
   status: 'Planning' | 'Active' | 'Completed' | 'On Hold' | 'Cancelled';
   startDate: string;
   endDate?: string;
   budget: number;
   participants: number;
   contactPerson: {
-    name?: string;
-    email?: string;
-    phone?: string;
+    name: string;
+    email: string;
+    phone: string;
   };
+  isActive: boolean;
   typeOfPermission?: 'Consent to Establish' | 'Consent to Operate' | 'Insurance' | 'NOC' | 'NOC/Permission from client' | 'Permission' | 'blank' | 'Government Approval' | 'Environmental Permit' | 'Construction License' | 'Operational Permit' | 'Not Applicable';
   agency?: 'Chief Controller of Explosives' | 'DEIAA/SEIAA' | 'Factories Department' | 'Forest Department' | 'Government/Private' | 'Labour Department Authority' | 'MOEFCC' | 'State Pollution Control Board' | 'State Water Department' | 'The Food Safety and Standards Authority of India' | 'Ministry of Environment' | 'Municipal Corporation' | 'State Government' | 'Central Government' | 'Not Applicable';
   applicable?: 'Yes' | 'No';
   registrationInfo: {
-    registered?: 'Yes' | 'No';
-    licenseNumber?: string;
-    validity?: string;
-    quantity?: string;
-    remarks?: string;
+    registered: 'Yes' | 'No';
+    licenseNumber: string;
+    validity: string;
+    quantity: string;
+    remarks: string;
   };
   complianceStatus?: 'Compliant' | 'Non-Compliant' | 'Pending Review' | 'In Progress';
   lastComplianceCheck?: string;
   nextComplianceReview?: string;
-  isActive: boolean;
+  // Add new tracking fields
+  statusCounts?: {
+    planning: number;
+    active: number;
+    completed: number;
+    onHold: number;
+    cancelled: number;
+  };
+  projectPhase?: 'Initial' | 'Design' | 'Execution' | 'Monitoring' | 'Closure';
+  riskLevel?: 'Low' | 'Medium' | 'High' | 'Critical';
+  complianceScore?: number;
+  lastUpdated?: Date | string;
 }
 
 export interface Location {

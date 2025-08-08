@@ -193,6 +193,54 @@ const initiativeSchema = new mongoose.Schema({
   },
   nextComplianceReview: {
     type: Date
+  },
+  // Add new tracking fields
+  statusCounts: {
+    planning: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    active: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    completed: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    onHold: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    cancelled: {
+      type: Number,
+      default: 0,
+      min: 0
+    }
+  },
+  projectPhase: {
+    type: String,
+    enum: ['Initial', 'Design', 'Execution', 'Monitoring', 'Closure'],
+    default: 'Initial'
+  },
+  riskLevel: {
+    type: String,
+    enum: ['Low', 'Medium', 'High', 'Critical'],
+    default: 'Low'
+  },
+  complianceScore: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
+  lastUpdated: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true
@@ -208,6 +256,30 @@ initiativeSchema.virtual('isExpiringRegistration').get(function() {
   const today = new Date();
   const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
   return this.registrationInfo.validity <= thirtyDaysFromNow;
+});
+
+// Add virtual for total initiatives count
+initiativeSchema.virtual('totalInitiatives').get(function() {
+  if (!this.statusCounts) return 0;
+  return Object.values(this.statusCounts).reduce((sum, count) => sum + count, 0);
+});
+
+// Add virtual for completion rate
+initiativeSchema.virtual('completionRate').get(function() {
+  if (!this.statusCounts || this.totalInitiatives === 0) return 0;
+  return Math.round((this.statusCounts.completed / this.totalInitiatives) * 100);
+});
+
+// Add virtual for risk score calculation
+initiativeSchema.virtual('riskScore').get(function() {
+  const riskValues = { Low: 1, Medium: 2, High: 3, Critical: 4 };
+  const phaseMultipliers = { Initial: 0.5, Design: 0.7, Execution: 1.0, Monitoring: 0.8, Closure: 0.3 };
+  
+  const baseRisk = riskValues[this.riskLevel] || 1;
+  const phaseMultiplier = phaseMultipliers[this.projectPhase] || 1;
+  const complianceBonus = this.complianceScore > 80 ? 0.8 : 1;
+  
+  return Math.round(baseRisk * phaseMultiplier * complianceBonus * 10) / 10;
 });
 
 module.exports = mongoose.model('Initiative', initiativeSchema);

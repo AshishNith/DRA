@@ -10,7 +10,7 @@ const ComplianceMaster: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<Initiative | null>(null);
-  const [showWorkLocations, setShowWorkLocations] = useState(true);
+  const [showWorkLocations, setShowWorkLocations] = useState(false);
   const [searchLocation, setSearchLocation] = useState('');
   const [showAddLocationForm, setShowAddLocationForm] = useState(false);
   const [newLocationName, setNewLocationName] = useState('');
@@ -57,7 +57,19 @@ const ComplianceMaster: React.FC = () => {
       name: '',
       email: '',
       phone: ''
-    }
+    },
+    // Add new tracking fields
+    statusCounts: {
+      planning: 0,
+      active: 0,
+      completed: 0,
+      onHold: 0,
+      cancelled: 0
+    },
+    projectPhase: 'Initial' as 'Initial' | 'Design' | 'Execution' | 'Monitoring' | 'Closure',
+    riskLevel: 'Low' as 'Low' | 'Medium' | 'High' | 'Critical',
+    complianceScore: 0,
+    lastUpdated: new Date().toISOString().split('T')[0]
   });
 
   // Add ref to track focused element
@@ -261,7 +273,19 @@ const ComplianceMaster: React.FC = () => {
         name: '',
         email: '',
         phone: ''
-      }
+      },
+      // Add new tracking fields with default values
+      statusCounts: {
+        planning: 0,
+        active: 0,
+        completed: 0,
+        onHold: 0,
+        cancelled: 0
+      },
+      projectPhase: 'Initial',
+      riskLevel: 'Low',
+      complianceScore: 0,
+      lastUpdated: new Date().toISOString().split('T')[0]
     });
 
   };  
@@ -298,6 +322,12 @@ const ComplianceMaster: React.FC = () => {
           email: locationFormData.contactPerson.email || '',
           phone: locationFormData.contactPerson.phone || ''
         },
+        // Add new tracking fields to initiative data
+        statusCounts: locationFormData.statusCounts,
+        projectPhase: locationFormData.projectPhase,
+        riskLevel: locationFormData.riskLevel,
+        complianceScore: locationFormData.complianceScore,
+        lastUpdated: new Date(),
         isActive: true
       };
 
@@ -330,7 +360,7 @@ const ComplianceMaster: React.FC = () => {
       description: item.description,
       status: item.status as any,
       dueDate: item.endDate || '',
-      assignedTo: item.location,
+      assignedTo: item.location || '',
     });
     setShowForm(true);
   };
@@ -491,7 +521,7 @@ const ComplianceMaster: React.FC = () => {
             {currentStep === 1 && (
               <div className="space-y-6" key="step-1">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Step 1: Initiative Title & Description</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Step 1: Initiative Details & Status Tracking</h3>
                   
                   <div className="space-y-4">
                     <div>
@@ -546,6 +576,187 @@ const ComplianceMaster: React.FC = () => {
                       </select>
                     </div>
 
+                    {/* Status Tracking Section */}
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                      <h4 className="text-lg font-medium text-gray-900">Initiative Status Tracking</h4>
+                      
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Planning Count</label>
+                          <input
+                            type="number"
+                            value={locationFormData.statusCounts.planning}
+                            onChange={(e) => {
+                              saveFocus();
+                              setLocationFormData(prev => ({
+                                ...prev,
+                                statusCounts: {
+                                  ...prev.statusCounts,
+                                  planning: parseInt(e.target.value) || 0
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            min="0"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Active Count</label>
+                          <input
+                            type="number"
+                            value={locationFormData.statusCounts.active}
+                            onChange={(e) => {
+                              saveFocus();
+                              setLocationFormData(prev => ({
+                                ...prev,
+                                statusCounts: {
+                                  ...prev.statusCounts,
+                                  active: parseInt(e.target.value) || 0
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            min="0"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Completed Count</label>
+                          <input
+                            type="number"
+                            value={locationFormData.statusCounts.completed}
+                            onChange={(e) => {
+                              saveFocus();
+                              setLocationFormData(prev => ({
+                                ...prev,
+                                statusCounts: {
+                                  ...prev.statusCounts,
+                                  completed: parseInt(e.target.value) || 0
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            min="0"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">On Hold Count</label>
+                          <input
+                            type="number"
+                            value={locationFormData.statusCounts.onHold}
+                            onChange={(e) => {
+                              saveFocus();
+                              setLocationFormData(prev => ({
+                                ...prev,
+                                statusCounts: {
+                                  ...prev.statusCounts,
+                                  onHold: parseInt(e.target.value) || 0
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            min="0"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Cancelled Count</label>
+                          <input
+                            type="number"
+                            value={locationFormData.statusCounts.cancelled}
+                            onChange={(e) => {
+                              saveFocus();
+                              setLocationFormData(prev => ({
+                                ...prev,
+                                statusCounts: {
+                                  ...prev.statusCounts,
+                                  cancelled: parseInt(e.target.value) || 0
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            min="0"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Compliance Score (%)</label>
+                          <input
+                            type="number"
+                            value={locationFormData.complianceScore}
+                            onChange={(e) => {
+                              saveFocus();
+                              setLocationFormData(prev => ({
+                                ...prev,
+                                complianceScore: Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
+                              }));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            min="0"
+                            max="100"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Project Phase</label>
+                          <select
+                            value={locationFormData.projectPhase}
+                            onChange={(e) => {
+                              saveFocus();
+                              setLocationFormData(prev => ({
+                                ...prev,
+                                projectPhase: e.target.value as typeof prev.projectPhase
+                              }));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="Initial">Initial</option>
+                            <option value="Design">Design</option>
+                            <option value="Execution">Execution</option>
+                            <option value="Monitoring">Monitoring</option>
+                            <option value="Closure">Closure</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
+                          <select
+                            value={locationFormData.riskLevel}
+                            onChange={(e) => {
+                              saveFocus();
+                              setLocationFormData(prev => ({
+                                ...prev,
+                                riskLevel: e.target.value as typeof prev.riskLevel
+                              }));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Summary Display */}
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">Summary</h5>
+                        <div className="text-sm text-gray-600">
+                          <p>Total Initiatives: {Object.values(locationFormData.statusCounts).reduce((sum, count) => sum + count, 0)}</p>
+                          <p>Completion Rate: {
+                            Object.values(locationFormData.statusCounts).reduce((sum, count) => sum + count, 0) > 0 
+                              ? Math.round((locationFormData.statusCounts.completed / Object.values(locationFormData.statusCounts).reduce((sum, count) => sum + count, 0)) * 100)
+                              : 0
+                          }%</p>
+                        </div>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Type of Permission</label>
                       <select
@@ -553,7 +764,7 @@ const ComplianceMaster: React.FC = () => {
                         value={locationFormData.typeOfPermission}
                         onChange={(e) => {
                           saveFocus();
-                          setLocationFormData(prev => ({...prev, typeOfPermission: e.target.value as Initiative['typeOfPermission']}));
+                          setLocationFormData(prev => ({...prev, typeOfPermission: e.target.value as Initiative['typeOfPermission']}))
                         }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
@@ -874,142 +1085,142 @@ const ComplianceMaster: React.FC = () => {
     return <LocationDataForm />;
   }
 
-  // if (showWorkLocations) {
-  //   return (
-  //     <div className="space-y-6">
-  //       <SuccessBanner />
-  //       <div className="flex items-center justify-between">
-  //         <div className="flex items-center space-x-4">
-  //           <button
-  //             onClick={() => setShowWorkLocations(false)}
-  //             className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
-  //           >
-  //             <ArrowLeft className="h-4 w-4" />
-  //             <span>Back to Compliance</span>
-  //           </button>
-  //           <h2 className="text-2xl font-bold text-gray-900">Work Locations</h2>
-  //         </div>
-  //         <button
-  //           onClick={() => setShowAddLocationForm(true)}
-  //           className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-  //         >
-  //           <Plus className="h-4 w-4" />
-  //           <span>Add Location</span>
-  //         </button>
-  //       </div>
+  if (showWorkLocations) {
+    return (
+      <div className="space-y-6">
+        <SuccessBanner />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            {/* <button
+              onClick={() => setShowWorkLocations(false)}
+              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Compliance</span>
+            </button> */}
+            <h2 className="text-2xl font-bold text-gray-900">Work Locations</h2>
+          </div>
+          <button
+            onClick={() => setShowAddLocationForm(true)}
+            className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Location</span>
+          </button>
+        </div>
 
-  //       {/* Add Location Form */}
-  //       {showAddLocationForm && (
-  //         <div className="bg-white border-2 border-green-300 rounded-xl p-6">
-  //           <h3 className="text-lg font-semibold mb-4 text-green-700">Add New Location</h3>
-  //           <div className="flex items-center space-x-3">
-  //             <input
-  //               type="text"
-  //               placeholder="Enter location name..."
-  //               value={newLocationName}
-  //               onChange={(e) => setNewLocationName(e.target.value)}
-  //               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-  //               onKeyPress={(e) => e.key === 'Enter' && handleAddLocation()}
-  //             />
-  //             <button
-  //               onClick={handleAddLocation}
-  //               disabled={!newLocationName.trim()}
-  //               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-  //             >
-  //               <Save className="h-4 w-4" />
-  //               <span>Save</span>
-  //             </button>
-  //             <button
-  //               onClick={() => {
-  //                 setShowAddLocationForm(false);
-  //                 setNewLocationName('');
-  //               }}
-  //               className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors flex items-center space-x-2"
-  //             >
-  //               <X className="h-4 w-4" />
-  //               <span>Cancel</span>
-  //             </button>
-  //           </div>
-  //         </div>
-  //       )}
+        {/* Add Location Form */}
+        {showAddLocationForm && (
+          <div className="bg-white border-2 border-green-300 rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-4 text-green-700">Add New Location</h3>
+            <div className="flex items-center space-x-3">
+              <input
+                type="text"
+                placeholder="Enter location name..."
+                value={newLocationName}
+                onChange={(e) => setNewLocationName(e.target.value)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onKeyPress={(e) => e.key === 'Enter' && handleAddLocation()}
+              />
+              <button
+                onClick={handleAddLocation}
+                disabled={!newLocationName.trim()}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <Save className="h-4 w-4" />
+                <span>Save</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddLocationForm(false);
+                  setNewLocationName('');
+                }}
+                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors flex items-center space-x-2"
+              >
+                <X className="h-4 w-4" />
+                <span>Cancel</span>
+              </button>
+            </div>
+          </div>
+        )}
 
-  //       {/* Search Bar */}
-  //       <div className="relative max-w-md">
-  //         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-  //         <input
-  //           type="text"
-  //           placeholder="Search location..."
-  //           value={searchLocation}
-  //           onChange={(e) => setSearchLocation(e.target.value)}
-  //           className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-  //         />
-  //       </div>
+        {/* Search Bar */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search location..."
+            value={searchLocation}
+            onChange={(e) => setSearchLocation(e.target.value)}
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
 
-  //       {/* Locations Grid */}
-  //       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-  //         {filteredLocations.map((location) => (
-  //           <div
-  //             key={location._id}
-  //             onClick={() => handleLocationClick(location)}
-  //             className="bg-white border-2 border-teal-300 rounded-xl p-6 hover:shadow-md transition-all duration-200 cursor-pointer hover:border-teal-400 group relative"
-  //           >
-  //             <button
-  //               onClick={(e) => {
-  //                 e.stopPropagation();
-  //                 handleDeleteLocation(location);
-  //               }}
-  //               className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-  //               disabled={submitting}
-  //             >
-  //               <X className="h-4 w-4" />
-  //             </button>
-  //             <div className="flex items-center justify-center mb-4">
-  //               <MapPin className="h-6 w-6 text-teal-600 group-hover:scale-110 transition-transform duration-200" />
-  //             </div>
-  //             <h3 className="text-center font-semibold text-gray-900 text-sm leading-tight pr-6">
-  //               {location.name}
-  //             </h3>
-  //           </div>
-  //         ))}
-  //       </div>
+        {/* Locations Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          {filteredLocations.map((location) => (
+            <div
+              key={location._id}
+              onClick={() => handleLocationClick(location)}
+              className="bg-white border-2 border-teal-300 rounded-xl p-6 hover:shadow-md transition-all duration-200 cursor-pointer hover:border-teal-400 group relative"
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteLocation(location);
+                }}
+                className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                disabled={submitting}
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex items-center justify-center mb-4">
+                <MapPin className="h-6 w-6 text-teal-600 group-hover:scale-110 transition-transform duration-200" />
+              </div>
+              <h3 className="text-center font-semibold text-gray-900 text-sm leading-tight pr-6">
+                {location.name}
+              </h3>
+            </div>
+          ))}
+        </div>
 
-  //       {filteredLocations.length === 0 && searchLocation && (
-  //         <div className="text-center py-12">
-  //           <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-  //           <h3 className="text-lg font-medium text-gray-900 mb-2">No locations found</h3>
-  //           <p className="text-gray-500 mb-4">Try adjusting your search terms</p>
-  //           <button
-  //             onClick={() => {
-  //               setNewLocationName(searchLocation);
-  //               setShowAddLocationForm(true);
-  //             }}
-  //             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-  //           >
-  //             Add "{searchLocation}" as new location
-  //           </button>
-  //         </div>
-  //       )}
+        {filteredLocations.length === 0 && searchLocation && (
+          <div className="text-center py-12">
+            <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No locations found</h3>
+            <p className="text-gray-500 mb-4">Try adjusting your search terms</p>
+            <button
+              onClick={() => {
+                setNewLocationName(searchLocation);
+                setShowAddLocationForm(true);
+              }}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Add "{searchLocation}" as new location
+            </button>
+          </div>
+        )}
 
-  //       {locations.length === 0 && (
-  //         <div className="text-center py-12">
-  //           <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-  //           <h3 className="text-lg font-medium text-gray-900 mb-2">No locations available</h3>
-  //           <p className="text-gray-500 mb-4">Start by adding your first work location</p>
-  //           <button
-  //             onClick={() => setShowAddLocationForm(true)}
-  //             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-  //           >
-  //             Add First Location
-  //           </button>
-  //         </div>
-  //       )}
-  //     </div>
-  //   );
-  // }
-
-  if(showWorkLocations) {
-    return ("")
+        {locations.length === 0 && (
+          <div className="text-center py-12">
+            <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No locations available</h3>
+            <p className="text-gray-500 mb-4">Start by adding your first work location</p>
+            <button
+              onClick={() => setShowAddLocationForm(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Add First Location
+            </button>
+          </div>
+        )}
+      </div>
+    );
   }
+
+  // if(showWorkLocations) {
+  //   return ("")
+  // }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1074,9 +1285,9 @@ const ComplianceMaster: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-gray-600">Loading...</span>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="ml-4 text-gray-600">Loading compliance data...</div>
       </div>
     );
   }
