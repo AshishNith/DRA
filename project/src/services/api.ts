@@ -1,5 +1,5 @@
-// const API_BASE_URL = 'http://localhost:5000/api';
-const API_BASE_URL = 'https://dra-fp3l.onrender.com/api';
+const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'https://dra-fp3l.onrender.com/api';
 
 export interface Initiative {
   _id?: string;
@@ -7,7 +7,7 @@ export interface Initiative {
   description: string;
   location: string;
   category: string;
-  status: string;
+  status: 'Planning' | 'Active' | 'Completed' | 'On Hold' | 'Cancelled';
   startDate: string;
   endDate?: string;
   budget: number;
@@ -17,17 +17,17 @@ export interface Initiative {
     email?: string;
     phone?: string;
   };
-  typeOfPermission?: string;
-  agency?: string;
-  applicable?: string;
+  typeOfPermission?: 'Consent to Establish' | 'Consent to Operate' | 'Insurance' | 'NOC' | 'NOC/Permission from client' | 'Permission' | 'blank' | 'Government Approval' | 'Environmental Permit' | 'Construction License' | 'Operational Permit' | 'Not Applicable';
+  agency?: 'Chief Controller of Explosives' | 'DEIAA/SEIAA' | 'Factories Department' | 'Forest Department' | 'Government/Private' | 'Labour Department Authority' | 'MOEFCC' | 'State Pollution Control Board' | 'State Water Department' | 'The Food Safety and Standards Authority of India' | 'Ministry of Environment' | 'Municipal Corporation' | 'State Government' | 'Central Government' | 'Not Applicable';
+  applicable?: 'Yes' | 'No';
   registrationInfo: {
-    registered?: string;
+    registered?: 'Yes' | 'No';
     licenseNumber?: string;
     validity?: string;
     quantity?: string;
     remarks?: string;
   };
-  complianceStatus?: string;
+  complianceStatus?: 'Compliant' | 'Non-Compliant' | 'Pending Review' | 'In Progress';
   lastComplianceCheck?: string;
   nextComplianceReview?: string;
   isActive: boolean;

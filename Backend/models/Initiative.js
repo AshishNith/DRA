@@ -11,7 +11,38 @@ const initiativeSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Description is required'],
     trim: true,
-    enum: ['Environmental Clearance', 'Forest Clearance', 'Land Acquisition', 'Safety Permits', 'Education', 'Healthcare', 'Environment', 'Technology', 'Community', 'Other']
+    enum: [
+      'Batching Plant',
+      'Blasting',
+      'BOCW Act',
+      'CLRA Licence',
+      'Crusher',
+      'DG Set',
+      'Employees Compensation Policy',
+      'Environment Clearance',
+      'Extraction of Ground Water',
+      'Factories approval',
+      'FSSAI license',
+      'Hot Mix Plant',
+      'ISMW',
+      'Mining Clearance',
+      'Petrol/Diesel Browser',
+      'Petrol Pump Station',
+      'PT Registration',
+      'Shop & Establishment',
+      'Tree Cutting',
+      'Wet Mix Plant',
+      'Environmental Clearance',
+      'Forest Clearance',
+      'Land Acquisition',
+      'Safety Permits',
+      'Education',
+      'Healthcare',
+      'Environment',
+      'Technology',
+      'Community',
+      'Other'
+    ]
   },
   location: {
     type: mongoose.Schema.Types.ObjectId,
@@ -22,7 +53,7 @@ const initiativeSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Category is required'],
     enum: ['Environmental', 'Safety', 'Legal', 'Financial', 'Operational', 'Education', 'Healthcare', 'Technology', 'Community', 'Other'],
-    default: 'Other'
+    default: 'Environmental'
   },
   status: {
     type: String,
@@ -73,13 +104,43 @@ const initiativeSchema = new mongoose.Schema({
   },
   typeOfPermission: {
     type: String,
-    enum: ['Government Approval', 'Environmental Permit', 'Construction License', 'Operational Permit', 'Not Applicable'],
+    enum: [
+      'Consent to Establish',
+      'Consent to Operate',
+      'Insurance',
+      'NOC',
+      'NOC/Permission from client',
+      'Permission',
+      'blank',
+      'Government Approval',
+      'Environmental Permit',
+      'Construction License',
+      'Operational Permit',
+      'Not Applicable'
+    ],
     default: 'Not Applicable'
   },
   agency: {
     type: String,
-    enum: ['Ministry of Environment', 'Forest Department', 'Municipal Corporation', 'State Government', 'Central Government', 'Not Applicable'],
-    trim: true
+    enum: [
+      'Chief Controller of Explosives',
+      'DEIAA/SEIAA',
+      'Factories Department',
+      'Forest Department',
+      'Government/Private',
+      'Labour Department Authority',
+      'MOEFCC',
+      'State Pollution Control Board',
+      'State Water Department',
+      'The Food Safety and Standards Authority of India',
+      'Ministry of Environment',
+      'Municipal Corporation',
+      'State Government',
+      'Central Government',
+      'Not Applicable'
+    ],
+    trim: true,
+    default: 'Not Applicable'
   },
   applicable: {
     type: String,

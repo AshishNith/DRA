@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, MapPin, CheckCircle, XCircle, Clock, Eye, RefreshCw, Shield } from 'lucide-react';
+import { ArrowLeft, Search, MapPin, CheckCircle, XCircle, Clock, Eye, RefreshCw, Shield, Edit, Trash2 } from 'lucide-react';
 import { apiService, Initiative, Location } from '../services/api';
 
 // Remove the old interface imports and define local interfaces
@@ -43,6 +43,16 @@ const Progress: React.FC = () => {
   const [compliance, setCompliance] = useState<Compliance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<Initiative | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    status: 'Planning' as 'Planning' | 'Active' | 'Completed' | 'On Hold' | 'Cancelled',
+    dueDate: '',
+    assignedTo: ''
+  });
 
   useEffect(() => {
     fetchData();
@@ -210,6 +220,67 @@ const Progress: React.FC = () => {
     );
   }
 
+  const handleEdit = (item: Initiative) => {
+    setEditingItem(item);
+    setFormData({
+      title: item.title,
+      description: item.description,
+      status: item.status,
+      dueDate: item.endDate || '',
+      assignedTo: item.location,
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this initiative?')) {
+      try {
+        setSubmitting(true);
+        await apiService.deleteInitiative(id);
+        setInitiatives(initiatives.filter(item => item._id !== id));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to delete initiative');
+      } finally {
+        setSubmitting(false);
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      
+      if (editingItem) {
+        const updateData = {
+          title: formData.title,
+          description: formData.description,
+          status: formData.status,
+          endDate: formData.dueDate || '',
+          location: formData.assignedTo
+        };
+        
+        const updatedInitiative = await apiService.updateInitiative(editingItem._id!, updateData);
+        setInitiatives(initiatives.map(item => 
+          item._id === editingItem._id ? updatedInitiative : item
+        ));
+      }
+      
+      resetForm();
+    } catch (err) {
+      console.error('Error saving initiative:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save item');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({ title: '', description: '', status: 'Planning', dueDate: '', assignedTo: '' });
+    setEditingItem(null);
+    setShowForm(false);
+  };
+
   if (selectedLocation) {
     const locationProgress = getLocationProgress(selectedLocation);
     
@@ -228,14 +299,6 @@ const Progress: React.FC = () => {
       const matchesSearch = initiative.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            initiative.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter = filterStatus === 'all' || initiative.status === filterStatus;
-      return matchesSearch && matchesFilter;
-    });
-
-    const filteredCompliance = locationProgress.compliance.filter(item => {
-      const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (item.regulatoryBody && item.regulatoryBody.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesFilter = filterStatus === 'all' || item.status === filterStatus;
       return matchesSearch && matchesFilter;
     });
 
@@ -322,6 +385,140 @@ const Progress: React.FC = () => {
           </div>
         </div>
 
+        {/* Add edit form */}
+        {showForm && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingItem ? 'Edit Initiative' : 'Add Initiative'}
+            </h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <select
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select Description</option>
+                  <option value="Batching Plant">Batching Plant</option>
+                  <option value="Blasting">Blasting</option>
+                  <option value="BOCW Act">BOCW Act (Building and Other Construction Workers)</option>
+                  <option value="CLRA Licence">CLRA Licence - Act 1970</option>
+                  <option value="Crusher">Crusher</option>
+                  <option value="DG Set">D G Set</option>
+                  <option value="Employees Compensation Policy">Employees Compensation Policy</option>
+                  <option value="Environment Clearance">Environment Clearance</option>
+                  <option value="Extraction of Ground Water">Extraction of Ground Water</option>
+                  <option value="Factories approval">Factories approval</option>
+                  <option value="FSSAI license">FSSAI license (Food vendor)</option>
+                  <option value="Hot Mix Plant">Hot Mix Plant</option>
+                  <option value="ISMW">ISMW - Act 1979</option>
+                  <option value="Mining Clearance">Mining Clearance (Specially Sand, etc.)</option>
+                  <option value="Petrol/Diesel Browser">Petrol / Diesel Browser</option>
+                  <option value="Petrol Pump Station">Petrol Pump Station</option>
+                  <option value="PT Registration">PT Registration</option>
+                  <option value="Shop & Establishment">Shop & establishment</option>
+                  <option value="Tree Cutting">Tree Cutting</option>
+                  <option value="Wet Mix Plant">Wet Mix Plant</option>
+                  <option value="Environmental Clearance">Environmental Clearance</option>
+                  <option value="Forest Clearance">Forest Clearance</option>
+                  <option value="Land Acquisition">Land Acquisition</option>
+                  <option value="Safety Permits">Safety Permits</option>
+                  <option value="Education">Education</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Environment">Environment</option>
+                  <option value="Technology">Technology</option>
+                  <option value="Community">Community</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="Planning">Planning</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                    <option value="On Hold">On Hold</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
+                  <select
+                    value={formData.assignedTo}
+                    onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select Location</option>
+                    {locations.map((location) => (
+                      <option key={location._id} value={location._id}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {submitting ? 'Saving...' : (editingItem ? 'Update' : 'Save')}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {/* Initiative Details */}
         <div className="bg-white rounded-xl border border-gray-200">
           <div className="border-b border-gray-200 p-6">
@@ -371,9 +568,25 @@ const Progress: React.FC = () => {
                             <p className="text-gray-600 mt-1">{initiative.description}</p>
                           </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(initiative.status)}`}>
-                          {initiative.status}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleEdit(initiative)}
+                            disabled={submitting}
+                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(initiative._id!)}
+                            disabled={submitting}
+                            className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(initiative.status)}`}>
+                            {initiative.status}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100">
@@ -413,6 +626,31 @@ const Progress: React.FC = () => {
                           {initiative.contactPerson.phone && (
                             <p className="text-sm text-gray-600">{initiative.contactPerson.phone}</p>
                           )}
+                        </div>
+                      )}
+
+                      {/* Show additional details for initiatives with permission info */}
+                      {initiative.typeOfPermission && initiative.typeOfPermission !== 'Not Applicable' && (
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                          <div className="text-xs text-gray-500 mb-1">Permission Details</div>
+                          <div className="space-y-1 text-sm">
+                            <div>
+                              <span className="text-gray-600">Type: </span>
+                              <span className="font-medium">{initiative.typeOfPermission}</span>
+                            </div>
+                            {initiative.agency && initiative.agency !== 'Not Applicable' && (
+                              <div>
+                                <span className="text-gray-600">Agency: </span>
+                                <span className="font-medium">{initiative.agency}</span>
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-gray-600">Applicable: </span>
+                              <span className={`font-medium ${initiative.applicable === 'Yes' ? 'text-green-600' : 'text-gray-600'}`}>
+                                {initiative.applicable}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       )}
 
