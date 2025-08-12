@@ -59,7 +59,7 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <>
+    <div className='fixed top-0 left-0 min-h-screen'>
       {/* Mobile Menu Toggle Button */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -78,12 +78,18 @@ const Sidebar: React.FC = () => {
 
       {/* Sidebar */}
       <div className={`
-        fixed lg:relative lg:translate-x-0 z-40
-        w-64 bg-white shadow-lg h-screen flex flex-col
+        lg:relative lg:translate-x-0 z-40
+        w-64 bg-white shadow-lg min-h-screen flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:block
-      `}>
+      `}
+        style={{
+          // Only show sidebar on mobile if open, always show on desktop
+          visibility: isMobileMenuOpen ? 'visible' : undefined,
+          pointerEvents: isMobileMenuOpen ? 'auto' : undefined,
+        }}
+      >
         {/* User Profile Section */}
         <div className="p-4 lg:p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3 mb-4">
@@ -142,7 +148,7 @@ const Sidebar: React.FC = () => {
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
