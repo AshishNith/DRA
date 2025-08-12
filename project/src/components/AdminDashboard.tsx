@@ -120,16 +120,16 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div className="flex items-center space-x-2">
-          <Users className="h-6 w-6 text-blue-600" />
-          <h3 className="text-lg font-semibold">User Management</h3>
-          <span className="text-sm text-gray-500">({users.length} users)</span>
+          <Users className="h-5 sm:h-6 w-5 sm:w-6 text-blue-600" />
+          <h3 className="text-base sm:text-lg font-semibold">User Management</h3>
+          <span className="text-xs sm:text-sm text-gray-500">({users.length} users)</span>
         </div>
         <button
           onClick={() => setShowAddForm(true)}
-          className="btn-primary flex items-center space-x-2"
+          className="w-full sm:w-auto btn-primary flex items-center justify-center space-x-2"
         >
           <Plus className="h-4 w-4" />
           <span>Add User</span>
@@ -143,12 +143,12 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {showAddForm && (
-        <div className="card p-6">
-          <h4 className="text-lg font-medium mb-4">
+        <div className="card p-4 sm:p-6">
+          <h4 className="text-base sm:text-lg font-medium mb-4">
             {editingUser ? 'Edit User' : 'Add New User'}
           </h4>
           <form onSubmit={editingUser ? handleUpdateUser : handleAddUser} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Full Name
@@ -200,11 +200,11 @@ const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {users.map((user) => (
           <div 
             key={user.uid} 
-            className="card p-6 cursor-pointer hover:shadow-lg transition-shadow duration-200"
+            className="card p-4 md:p-6 cursor-pointer hover:shadow-lg transition-shadow duration-200"
             onClick={() => handleUserClick(user)}
           >
             <div className="flex items-start justify-between mb-4">
@@ -277,10 +277,10 @@ const AdminDashboard: React.FC = () => {
 
       {/* User Details Modal */}
       {showUserDetails && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-semibold">User Details</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+              <h2 className="text-lg sm:text-xl font-semibold">User Details</h2>
               <button
                 onClick={() => setShowUserDetails(false)}
                 className="text-gray-400 hover:text-gray-600"

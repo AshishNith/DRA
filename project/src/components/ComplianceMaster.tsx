@@ -12,7 +12,7 @@ const ComplianceMaster: React.FC = () => {
   const [editingItem, setEditingItem] = useState<Initiative | null>(null);
   const [showWorkLocations, setShowWorkLocations] = useState(false);
   const [searchLocation, setSearchLocation] = useState('');
-  const [showAddLocationForm, setShowAddLocationForm] = useState(false);
+  const [showAddLocationForm, setShowAddLocationForm] = useState(true);
   const [newLocationName, setNewLocationName] = useState('');
   const [showLocationDataForm, setShowLocationDataForm] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
@@ -432,8 +432,8 @@ const ComplianceMaster: React.FC = () => {
   // Location Data Form Component
   const LocationDataForm = () => (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <button
             onClick={() => setShowLocationDataForm(false)}
             className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
@@ -441,14 +441,14 @@ const ComplianceMaster: React.FC = () => {
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Work Locations</span>
           </button>
-          <h2 className="text-2xl font-bold text-gray-900">Add {selectedLocation?.name} Data</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Add {selectedLocation?.name} Data</h2>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="flex">
+        <div className="flex flex-col lg:flex-row">
           {/* Progress Sidebar */}
-          <div className="w-80 bg-gray-50 p-6 border-r border-gray-200">
+          <div className="w-full lg:w-80 bg-gray-50 p-4 lg:p-6 border-b lg:border-b-0 lg:border-r border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Progress</h3>
             <div className="space-y-4">
   {[
@@ -513,7 +513,7 @@ const ComplianceMaster: React.FC = () => {
           </div>
 
           {/* Form Content */}
-          <div className="flex-1 p-8">
+          <div className="flex-1 p-4 sm:p-6 lg:p-8">
             <div className="mb-6">
               <div className="bg-gray-100 rounded-lg p-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
@@ -580,186 +580,7 @@ const ComplianceMaster: React.FC = () => {
                       </select>
                     </div>
 
-                    {/* Status Tracking Section */}
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                      <h4 className="text-lg font-medium text-gray-900">Initiative Status Tracking</h4>
-                      
-                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Planning Count</label>
-                          <input
-                            type="number"
-                            value={locationFormData.statusCounts.planning}
-                            onChange={(e) => {
-                              saveFocus();
-                              setLocationFormData(prev => ({
-                                ...prev,
-                                statusCounts: {
-                                  ...prev.statusCounts,
-                                  planning: parseInt(e.target.value) || 0
-                                }
-                              }));
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            min="0"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Active Count</label>
-                          <input
-                            type="number"
-                            value={locationFormData.statusCounts.active}
-                            onChange={(e) => {
-                              saveFocus();
-                              setLocationFormData(prev => ({
-                                ...prev,
-                                statusCounts: {
-                                  ...prev.statusCounts,
-                                  active: parseInt(e.target.value) || 0
-                                }
-                              }));
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            min="0"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Completed Count</label>
-                          <input
-                            type="number"
-                            value={locationFormData.statusCounts.completed}
-                            onChange={(e) => {
-                              saveFocus();
-                              setLocationFormData(prev => ({
-                                ...prev,
-                                statusCounts: {
-                                  ...prev.statusCounts,
-                                  completed: parseInt(e.target.value) || 0
-                                }
-                              }));
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            min="0"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">On Hold Count</label>
-                          <input
-                            type="number"
-                            value={locationFormData.statusCounts.onHold}
-                            onChange={(e) => {
-                              saveFocus();
-                              setLocationFormData(prev => ({
-                                ...prev,
-                                statusCounts: {
-                                  ...prev.statusCounts,
-                                  onHold: parseInt(e.target.value) || 0
-                                }
-                              }));
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            min="0"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Cancelled Count</label>
-                          <input
-                            type="number"
-                            value={locationFormData.statusCounts.cancelled}
-                            onChange={(e) => {
-                              saveFocus();
-                              setLocationFormData(prev => ({
-                                ...prev,
-                                statusCounts: {
-                                  ...prev.statusCounts,
-                                  cancelled: parseInt(e.target.value) || 0
-                                }
-                              }));
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            min="0"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Compliance Score (%)</label>
-                          <input
-                            type="number"
-                            value={locationFormData.complianceScore}
-                            onChange={(e) => {
-                              saveFocus();
-                              setLocationFormData(prev => ({
-                                ...prev,
-                                complianceScore: Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
-                              }));
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            min="0"
-                            max="100"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Project Phase</label>
-                          <select
-                            value={locationFormData.projectPhase}
-                            onChange={(e) => {
-                              saveFocus();
-                              setLocationFormData(prev => ({
-                                ...prev,
-                                projectPhase: e.target.value as typeof prev.projectPhase
-                              }));
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="Initial">Initial</option>
-                            <option value="Design">Design</option>
-                            <option value="Execution">Execution</option>
-                            <option value="Monitoring">Monitoring</option>
-                            <option value="Closure">Closure</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
-                          <select
-                            value={locationFormData.riskLevel}
-                            onChange={(e) => {
-                              saveFocus();
-                              setLocationFormData(prev => ({
-                                ...prev,
-                                riskLevel: e.target.value as typeof prev.riskLevel
-                              }));
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                            <option value="Critical">Critical</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Summary Display */}
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <h5 className="text-sm font-medium text-gray-700 mb-2">Summary</h5>
-                        <div className="text-sm text-gray-600">
-                          <p>Total Initiatives: {Object.values(locationFormData.statusCounts).reduce((sum, count) => sum + count, 0)}</p>
-                          <p>Completion Rate: {
-                            Object.values(locationFormData.statusCounts).reduce((sum, count) => sum + count, 0) > 0 
-                              ? Math.round((locationFormData.statusCounts.completed / Object.values(locationFormData.statusCounts).reduce((sum, count) => sum + count, 0)) * 100)
-                              : 0
-                          }%</p>
-                        </div>
-                      </div>
-                    </div>
+                    
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Type of Permission</label>
@@ -1093,8 +914,8 @@ const ComplianceMaster: React.FC = () => {
     return (
       <div className="space-y-6">
         <SuccessBanner />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {/* <button
               onClick={() => setShowWorkLocations(false)}
               className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
@@ -1102,7 +923,7 @@ const ComplianceMaster: React.FC = () => {
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Compliance</span>
             </button> */}
-            <h2 className="text-2xl font-bold text-gray-900">Work Locations</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Work Locations</h2>
           </div>
           <button
             onClick={() => setShowAddLocationForm(true)}
@@ -1115,7 +936,7 @@ const ComplianceMaster: React.FC = () => {
 
         {/* Add Location Form */}
         {showAddLocationForm && (
-          <div className="bg-white border-2 border-green-300 rounded-xl p-6">
+          <div className="bg-white border-2 border-green-300 rounded-xl p-4 sm:p-6">
             <h3 className="text-lg font-semibold mb-4 text-green-700">Add New Location</h3>
             <div className="flex items-center space-x-3">
               <input
@@ -1149,7 +970,7 @@ const ComplianceMaster: React.FC = () => {
         )}
 
         {/* Search Bar */}
-        <div className="relative max-w-md">
+        <div className="relative max-w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
@@ -1161,7 +982,7 @@ const ComplianceMaster: React.FC = () => {
         </div>
 
         {/* Locations Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {filteredLocations.map((location) => (
             <div
               key={location._id}
@@ -1328,9 +1149,9 @@ const ComplianceMaster: React.FC = () => {
   return (
     <div className="space-y-6">
       <SuccessBanner />
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Compliance Master</h2>
-        <div className="flex items-center space-x-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Compliance Master</h2>
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <button
             onClick={() => setShowWorkLocations(true)}
             className="flex items-center space-x-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
@@ -1349,12 +1170,12 @@ const ComplianceMaster: React.FC = () => {
       </div>
 
       {showForm && (
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           <h3 className="text-lg font-semibold mb-4">
             {editingItem ? 'Edit Compliance Item' : 'Add New Compliance Item'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Title
@@ -1415,7 +1236,7 @@ const ComplianceMaster: React.FC = () => {
                 <option value="Other">Other</option>
               </select>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Status
@@ -1468,114 +1289,6 @@ const ComplianceMaster: React.FC = () => {
           </form>
         </div>
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {initiatives.map((item) => {
-          // Handle both string and object location references
-          const locationName = typeof item.location === 'string' 
-            ? locations.find(loc => loc._id === item.location)?.name || 'Unknown'
-            : (item.location as any)?.name || 'Unknown';
-            
-          return (
-            <div key={item._id} className="card p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  {getStatusIcon(item.status)}
-                  <h3 className="font-semibold text-gray-900">{item.title}</h3>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                    disabled={submitting}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item._id!)}
-                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                    disabled={submitting}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              
-              <p className="text-gray-600 mb-4">{item.description}</p>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(item.status)}`}>
-                    {item.status}
-                  </span>
-                  {item.endDate && (
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      <span>{new Date(item.endDate).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  <span>Location: {locationName}</span>
-                </div>
-                
-                {/* Show additional details for initiatives with registration info */}
-                {item.typeOfPermission && item.typeOfPermission !== 'Not Applicable' && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="text-xs text-gray-500 mb-1">Permission Details</div>
-                    <div className="space-y-1 text-sm">
-                      <div>
-                        <span className="text-gray-600">Type: </span>
-                        <span className="font-medium">{item.typeOfPermission}</span>
-                      </div>
-                      {item.agency && item.agency !== 'Not Applicable' && (
-                        <div>
-                          <span className="text-gray-600">Agency: </span>
-                          <span className="font-medium">{item.agency}</span>
-                        </div>
-                      )}
-                      <div>
-                        <span className="text-gray-600">Applicable: </span>
-                        <span className={`font-medium ${item.applicable === 'Yes' ? 'text-green-600' : 'text-gray-600'}`}>
-                          {item.applicable}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Show registration info if registered */}
-                {item.registrationInfo?.registered === 'Yes' && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="text-xs text-blue-600 mb-1 font-medium">Registration Status</div>
-                    <div className="space-y-1 text-sm">
-                      {item.registrationInfo.licenseNumber && (
-                        <div>
-                          <span className="text-gray-600">License: </span>
-                          <span className="font-medium">{item.registrationInfo.licenseNumber}</span>
-                        </div>
-                      )}
-                      {item.registrationInfo.validity && (
-                        <div>
-                          <span className="text-gray-600">Valid Until: </span>
-                          <span className="font-medium">{new Date(item.registrationInfo.validity).toLocaleDateString()}</span>
-                        </div>
-                      )}
-                      {item.registrationInfo.quantity && (
-                        <div>
-                          <span className="text-gray-600">Quantity: </span>
-                          <span className="font-medium">{item.registrationInfo.quantity}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
 
       {initiatives.length === 0 && (
         <div className="text-center py-12">

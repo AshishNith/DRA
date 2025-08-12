@@ -82,6 +82,7 @@ const Sidebar: React.FC = () => {
         w-64 bg-white shadow-lg h-screen flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0 lg:block
       `}>
         {/* User Profile Section */}
         <div className="p-4 lg:p-6 border-b border-gray-200">

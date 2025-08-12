@@ -190,7 +190,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onSectionChange }
       </div>
 
       {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         {[
           { label: "Active Projects", value: "24", color: "text-blue-600", bg: "bg-blue-50" },
           { label: "Pending Reviews", value: "8", color: "text-orange-600", bg: "bg-orange-50" },
