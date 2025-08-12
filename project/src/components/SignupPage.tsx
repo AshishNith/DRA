@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+ q    import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import "../styles/Signup.css";
 import { useAuth } from '../auth/AuthContext';
@@ -144,11 +144,11 @@ const SignupPage: React.FC = () => {
       </div>
 
       {/* Main Container */}
-      <div className="relative flex min-h-screen">
+      <div className="relative flex flex-col lg:flex-row min-h-screen">
         {/* Left Panel */}
-        <div className={`flex-1 flex flex-col justify-center items-center p-8 transition-all duration-1000 ${isAnimated ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}>
-          {/* Logo */}
-          <div className="text-center max-w-md">
+        <div className={`flex-1 flex flex-col justify-center items-center p-6 sm:p-8 transition-all duration-1000 ${isAnimated ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}>
+          <div className="text-center max-w-md w-full">
+            {/* Logo */}
             <div className="mb-8 relative">
               <div className="w-32 h-32 mx-auto mb-6 relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-spin-slow"></div>
@@ -185,7 +185,7 @@ const SignupPage: React.FC = () => {
             </div>
 
             {/* Features */}
-            <div className="grid grid-cols-3 gap-3 mt-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8">
               {[
                 { icon: Shield, text: "Secure Setup" },
                 { icon: Building2, text: "Team Access" },
@@ -203,7 +203,7 @@ const SignupPage: React.FC = () => {
         </div>
 
         {/* Right Panel */}
-        <div className={`flex-1 flex flex-col justify-center p-8 transition-all duration-1000 ${isAnimated ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
+        <div className={`flex-1 flex flex-col justify-center p-6 sm:p-8 transition-all duration-1000 ${isAnimated ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
           <div className="max-w-md w-full mx-auto">
             {/* Form Title */}
             <div className="text-center mb-8">
@@ -235,7 +235,7 @@ const SignupPage: React.FC = () => {
 
             {/* Signup Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-white mb-1">
                     First Name
@@ -401,7 +401,7 @@ const SignupPage: React.FC = () => {
             </div>
 
             {/* Social Signup Buttons */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={handleGoogleSignup}
                 className="flex items-center justify-center py-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
@@ -451,7 +451,7 @@ const SignupPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div> {/* ✅ This is the missing closing tag for <div className="relative flex min-h-screen"> */}
+      </div>
     </div>
   );
 };

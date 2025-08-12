@@ -95,10 +95,10 @@ const LoginPage: React.FC = () => {
       </div>
 
       {/* Main Container */}
-      <div className="relative flex min-h-screen">
+      <div className="relative flex flex-col lg:flex-row min-h-screen">
         {/* Left Panel */}
-        <div className={`flex-1 flex flex-col justify-center items-center p-8 transition-all duration-1000 ${isAnimated ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}>
-          <div className="text-center max-w-md">
+        <div className={`flex-1 flex flex-col justify-center items-center p-6 sm:p-8 transition-all duration-1000 ${isAnimated ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}>
+          <div className="text-center max-w-md w-full">
             {/* Logo with Animation */}
             <div className="mb-8 relative">
               <div className="w-32 h-32 mx-auto mb-6 relative group">
@@ -136,7 +136,7 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Feature Cards */}
-            <div className="grid grid-cols-3 gap-3 mt-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8">
               {[
                 { icon: Shield, text: "Secure Access" },
                 { icon: Building2, text: "Infrastructure" },
@@ -154,7 +154,7 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Right Panel */}
-        <div className={`flex-1 flex flex-col justify-center p-8 transition-all duration-1000 ${isAnimated ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
+        <div className={`flex-1 flex flex-col justify-center p-6 sm:p-8 transition-all duration-1000 ${isAnimated ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
           <div className="max-w-md w-full mx-auto">
             {/* Form Title */}
             <div className="text-center mb-8">
@@ -278,7 +278,7 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Social Login & Signup Link */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={handleGoogleLogin}
                 className="flex items-center justify-center py-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
